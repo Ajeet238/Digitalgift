@@ -98,7 +98,7 @@ public class AuthController {
 
 			AuthResponse authResponse = new AuthResponse();
 			// authResponse.setJwt(token);
-			authResponse.setMessage("Sign Success");
+			authResponse.setMessage("Sign up Successfull");
 			return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
 		}
 	}
