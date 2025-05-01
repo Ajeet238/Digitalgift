@@ -41,5 +41,5 @@ jobs:
           docker pull ${{ secrets.DOCKER_USERNAME }}/userservice:latest
           docker stop userservice || true
           docker rm userservice || true
-          docker run -d --name userservice -p 8080:8080 ${{ secrets.DOCKER_USERNAME }}/userservice:latest
+          docker run -d --name userservice -p 8081:8081 ${{ secrets.DOCKER_USERNAME }}/userservice:latest
         EOF
