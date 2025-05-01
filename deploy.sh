@@ -25,7 +25,7 @@ fi
 echo "📁 STEP 3: Committing local code to GitHub..."
 git add .
 git commit -m "$COMMIT_MESSAGE"
-git push origin main
+git push origin master
 
 if [ $? -ne 0 ]; then
   echo "❌ Git push failed."
