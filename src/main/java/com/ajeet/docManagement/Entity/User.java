@@ -1,5 +1,7 @@
 package com.ajeet.docManagement.Entity;
 
+import java.util.Date;
+
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -18,6 +20,29 @@ public class User {
     private String password;
     private String role;  // ROLE_USER, ROLE_ADMIN, etc.
     private String email;
+    private String profile_Pic_Url;
+    private Date created_at;
+	private String phone;
+    
+    public String getProfile_Pic_Url() {
+		return profile_Pic_Url;
+	}
+	public void setProfile_Pic_Url(String profile_Pic_Url) {
+		this.profile_Pic_Url = profile_Pic_Url;
+	}
+	public Date getCreated_at() {
+		return created_at;
+	}
+	public void setCreated_at(Date created_at) {
+		this.created_at = created_at;
+	}
+	public String getPhone() {
+		return phone;
+	}
+	public void setPhone(String phone) {
+		this.phone = phone;
+	}
+
     
     public Long getId() {
 		return id;

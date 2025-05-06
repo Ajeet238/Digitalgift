@@ -27,15 +27,18 @@ import com.ajeet.docManagement.Repository.UserRepository;
 import com.ajeet.docManagement.config.JwtProvider;
 import com.ajeet.docManagement.exception.UserException;
 import com.ajeet.docManagement.request.LoginRequest;
+import com.ajeet.docManagement.request.OtpRequest;
+import com.ajeet.docManagement.request.OtpVerifyRequest;
 import com.ajeet.docManagement.response.AuthResponse;
 import com.ajeet.docManagement.response.TokenValidationResponse;
+import com.ajeet.docManagement.service.OtpService;
 import com.ajeet.docManagement.service.TokenService;
 import com.ajeet.docManagement.userDetailServiceimpl.UserDetailService;
 
 import io.jsonwebtoken.Claims;
 
 @RestController
-@RequestMapping("/auth")
+@RequestMapping("api/auth")
 public class AuthController {
 
 	@Autowired
@@ -52,6 +55,9 @@ public class AuthController {
 
 	@Autowired
 	private UserDetailService customUserService;
+	
+    @Autowired
+    private OtpService otpService;
 
     private final TokenRepository tokenRepository;
 
@@ -72,7 +78,7 @@ public class AuthController {
 		String firstName = user.getFirstname();
 		String lastName = user.getLastname();
 		String role = user.getRole();
-
+		
 		System.out.println("authcontroller");
 		Optional<User> isUserExist = userRepository.findByUsername(userName);
 		if (isUserExist.isPresent()) {
@@ -111,14 +117,14 @@ public class AuthController {
 		AuthResponse authResponse = new AuthResponse();
 
 		System.out.println("Username" + userName);
-		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-		String jwt = auth.getCredentials().toString();
-		Token token = tokenRepository.findByToken(jwt);
-
-		if (!token.getUsername().equalsIgnoreCase(userName)) {
-			authResponse.setMessage("Invalid token....");
-			return new ResponseEntity<AuthResponse>(authResponse, HttpStatus.BAD_GATEWAY);
-		}
+//		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+//		String jwt = auth.getCredentials().toString();
+//		Token token = tokenRepository.findByToken(jwt);
+//
+//		if (!token.getUsername().equalsIgnoreCase(userName)) {
+//			authResponse.setMessage("Invalid token....");
+//			return new ResponseEntity<AuthResponse>(authResponse, HttpStatus.BAD_GATEWAY);
+//		}
 		Authentication authentication = jwtProvider.authenticate(userName, password);
 		SecurityContextHolder.getContext().setAuthentication(authentication);
 		String jwttoken = jwtProvider.generateToken(userName);
@@ -129,7 +135,7 @@ public class AuthController {
 
 			return new ResponseEntity<AuthResponse>(authResponse, HttpStatus.CREATED);
 		}
-		authResponse.setMessage("Invalid User");
+			authResponse.setMessage("Invalid User");
 		return new ResponseEntity<AuthResponse>(authResponse, HttpStatus.BAD_GATEWAY);
 
 	}
@@ -207,5 +213,23 @@ public class AuthController {
 
 	    return ResponseEntity.ok(claims.getSubject());
 	}
+	
+
+
+    @PostMapping("/sendotp")
+    public ResponseEntity<?> sendOtp(@RequestBody OtpRequest request) {
+        otpService.sendOtp(request.getPhone());
+        return ResponseEntity.ok("OTP sent successfully");
+    }
+
+    @PostMapping("/verifyotp")
+    public ResponseEntity<?> verifyOtp(@RequestBody OtpVerifyRequest request) {
+        boolean isValid = otpService.verifyOtp(request.getPhone(), request.getOtp());
+        if (isValid) {
+            return ResponseEntity.ok("OTP verified successfully");
+        } else {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired OTP");
+        }
+    }
 
 }

@@ -1,32 +1,14 @@
 package com.ajeet.docManagement.config;
 
-import java.util.Arrays;
-import java.util.Collections;
-
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.AuthenticationProvider;
-import org.springframework.security.authentication.BadCredentialsException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
-import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.authentication.www.BasicAuthenticationFilter;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import jakarta.servlet.Filter;
-import jakarta.servlet.http.HttpServletRequest;
 
 @Configuration
 public class AppConfig {
@@ -40,9 +22,12 @@ public class AppConfig {
 		System.out.println("inside security filter");
         http.csrf().disable()  // Disable CSRF for simplicity (be cautious in production)
             .authorizeHttpRequests(authorize -> authorize
-                .requestMatchers("/auth/signup").permitAll()
-                .requestMatchers("/auth/validateToken").permitAll()
-                .requestMatchers("/auth/getToken").permitAll()// Allow access to all endpoints starting with /auth/
+                .requestMatchers("/api/auth/signup").permitAll()
+                .requestMatchers("/api/auth/validateToken").permitAll()
+                .requestMatchers("/api/auth/sendotp").permitAll()
+                .requestMatchers("/api/auth/verifyotp").permitAll()                
+                .requestMatchers("/api/auth/getToken").permitAll()// Allow access to all endpoints starting with /auth/
+                .requestMatchers("/api/auth/signin").permitAll()
                 .anyRequest().authenticated()  // All other requests require authentication
             ).addFilterBefore(jwtValidator, UsernamePasswordAuthenticationFilter.class);
 
