@@ -2,7 +2,10 @@ package com.ajeet.docManagement.config;
 
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import javax.crypto.SecretKey;
 
@@ -35,11 +38,19 @@ public class JwtProvider {
 
 		@Autowired
 		private UserDetailService customUserService;
+		
+		// used for token generation for reset password by email
+		
+	    private final Map<String, String> tokenStore = new HashMap<>();
+	    private final Map<String, Long> expiryStore = new HashMap<>();
+	    private final long EXPIRY = 15 * 60 * 1000; // 15 minutes
+	    
+	    
     // Secret key generated using HS256
     private static final SecretKey KEY =  JwtConstant.SECRET_KEY; // For HS256 algorithm
 
     // Method to generate the token
-    public String generateToken(String userName) {
+    public String generateToken(String userName, String email) {
         long now = System.currentTimeMillis();
         Date validity = new Date(now + 1000 * 60 * 60); // Token valid for 1 hour
         Optional<Token> checkSession = tokenRepository.findByUsername(userName);
@@ -50,6 +61,8 @@ public class JwtProvider {
                 .setSubject(userName)  // Set roles/authorities
                 .setIssuedAt(new Date(now))
                 .setExpiration(validity)
+                .claim("email", email)                     // custom claim
+                .claim("username", userName) 
                 .signWith(KEY, SignatureAlgorithm.HS256)  // Use HS256 for signing
                 .compact();
         
@@ -69,15 +82,17 @@ public class JwtProvider {
     // Method to validate and parse the token
     public static Claims validateToken(String token) {
         try {
-        	  System.out.println("Token: " + token);
-            // Parse the JWT and validate it using the SECRET_KEY
-            return Jwts.parser().setSigningKey(KEY).build().parseClaimsJws(token).getBody(); // Extract claims from the body
+            System.out.println("Token: " + token);
+            return Jwts.parser()
+                       .setSigningKey(KEY)
+                       .build()
+                       .parseClaimsJws(token)
+                       .getBody();
         } catch (Exception e) {
-            // Handle exceptions such as invalid token, signature mismatch, etc.
-            throw new RuntimeException("Invalid or expired token", e);
+            return null; // Gracefully fail, allow null check in controller
         }
     }
-    
+
 	// Authenticate Username and password;
     
 	public Authentication authenticate(String username, String password) {
@@ -107,4 +122,11 @@ public class JwtProvider {
         // Extract the email from the claims
         return claims.getSubject();  // Assuming the email is stored as the subject
     }
+    
+
+    public void invalidate(String token) {
+        tokenStore.remove(token);
+        expiryStore.remove(token);
+    }
+    
 }

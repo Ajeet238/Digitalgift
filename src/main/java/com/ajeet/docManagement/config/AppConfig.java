@@ -25,7 +25,10 @@ public class AppConfig {
                 .requestMatchers("/api/auth/signup").permitAll()
                 .requestMatchers("/api/auth/validateToken").permitAll()
                 .requestMatchers("/api/auth/sendotp").permitAll()
-                .requestMatchers("/api/auth/verifyotp").permitAll()                
+                .requestMatchers("/api/auth/verifyotp").permitAll()
+                .requestMatchers("/api/auth/request-reset-link").permitAll() 
+                .requestMatchers("/api/auth/reset-password-otp").permitAll() 
+                .requestMatchers("/api/auth/reset-password").permitAll()
                 .requestMatchers("/api/auth/getToken").permitAll()// Allow access to all endpoints starting with /auth/
                 .requestMatchers("/api/auth/signin").permitAll()
                 .anyRequest().authenticated()  // All other requests require authentication

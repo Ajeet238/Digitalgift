@@ -1,6 +1,7 @@
 package com.ajeet.docManagement.Controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,12 +28,15 @@ import com.ajeet.docManagement.Repository.UserRepository;
 import com.ajeet.docManagement.config.JwtProvider;
 import com.ajeet.docManagement.exception.UserException;
 import com.ajeet.docManagement.request.LoginRequest;
+import com.ajeet.docManagement.request.OtpPasswordResetRequest;
 import com.ajeet.docManagement.request.OtpRequest;
 import com.ajeet.docManagement.request.OtpVerifyRequest;
 import com.ajeet.docManagement.response.AuthResponse;
 import com.ajeet.docManagement.response.TokenValidationResponse;
+import com.ajeet.docManagement.service.EmailService;
 import com.ajeet.docManagement.service.OtpService;
 import com.ajeet.docManagement.service.TokenService;
+import com.ajeet.docManagement.service.Userservice;
 import com.ajeet.docManagement.userDetailServiceimpl.UserDetailService;
 
 import io.jsonwebtoken.Claims;
@@ -58,7 +62,17 @@ public class AuthController {
 	
     @Autowired
     private OtpService otpService;
+    
+    @Autowired
+    private Userservice userService;
+    
+    @Autowired
+    private JwtProvider resetTokenService;
+    
+    @Autowired
+    private EmailService emailService;
 
+    
     private final TokenRepository tokenRepository;
 
     // Constructor Injection
@@ -113,6 +127,7 @@ public class AuthController {
 	public ResponseEntity<AuthResponse> loginUserHandler(@RequestBody LoginRequest loginRequest) {
 		String userName = loginRequest.getUsername();
 		String password = loginRequest.getPassword();
+		String email = loginRequest.getEmail();
 		// String email = loginRequest.getPassword();
 		AuthResponse authResponse = new AuthResponse();
 
@@ -127,7 +142,7 @@ public class AuthController {
 //		}
 		Authentication authentication = jwtProvider.authenticate(userName, password);
 		SecurityContextHolder.getContext().setAuthentication(authentication);
-		String jwttoken = jwtProvider.generateToken(userName);
+		String jwttoken = jwtProvider.generateToken(userName,email);
 
 		if (authentication.isAuthenticated()) {
 
@@ -167,12 +182,13 @@ public class AuthController {
 	@PostMapping("/getToken")
 	public String getToken(@RequestBody LoginRequest loginrequest) {
 		String userName = loginrequest.getUsername();
+		String email = loginrequest.getEmail();
 		System.out.println("userName" + userName);	
-		;String password = loginrequest.getPassword();
+		String password = loginrequest.getPassword();
 		Authentication authentication = jwtProvider.authenticate(userName, password);
 
 		if (authentication.isAuthenticated()) { 
-			return jwtProvider.generateToken(userName);
+			return jwtProvider.generateToken(userName,email);
 		} else {
 			throw new RuntimeException("invalid access");
 		}
@@ -218,8 +234,8 @@ public class AuthController {
 
     @PostMapping("/sendotp")
     public ResponseEntity<?> sendOtp(@RequestBody OtpRequest request) {
-        otpService.sendOtp(request.getPhone());
-        return ResponseEntity.ok("OTP sent successfully");
+       String otp =  otpService.sendOtp(request.getPhone());
+        return ResponseEntity.ok("OTP sent: Your OTP is: "+ otp);
     }
 
     @PostMapping("/verifyotp")
@@ -231,5 +247,47 @@ public class AuthController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired OTP");
         }
     }
+    
+    @PostMapping("/reset-password-otp")
+    public ResponseEntity<?> resetPasswordWithOtp(@RequestBody OtpPasswordResetRequest req) {
+        boolean isValid = otpService.verifyOtp(req.getPhone(), req.getOtp());
+        if (!isValid) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired OTP");
+        }
+        System.out.println("req.getPhone()"+req.getPhone());
+        userService.updatePasswordByEmail(req.getEmail(), req.getNewPassword());
+        return ResponseEntity.ok("Password updated successfully.");
+    }
+    @PostMapping("/request-reset-link")
+    public ResponseEntity<?> requestResetLink(@RequestBody Map<String, String> body) {
+        String email = body.get("email");
+        String userName = body.get("username");
+        String token = resetTokenService.generateToken(userName,email);
+        String link = "https://your-app.com/reset-password?token=" + token;
+
+        emailService.send(email, "Reset your password",
+                "Click this link to reset your password:\n" + link);
+
+        return ResponseEntity.ok("Reset link sent to email.");
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+        String token = body.get("token");
+        String newPassword = body.get("newPassword");
+
+        Claims claim = resetTokenService.validateToken(token);
+        
+        if (claim == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                                 .body("Invalid or expired token");
+        }
+        String email = (String) claim.get("email");
+        System.out.println("email=>"+email);
+        userService.updatePasswordByEmail(email, newPassword);
+        resetTokenService.invalidate(token);
+        return ResponseEntity.ok("Password updated successfully.");
+    }
+
 
 }

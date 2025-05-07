@@ -16,10 +16,12 @@ public class OtpService {
     private final Map<String, OtpEntry> otpStore = new ConcurrentHashMap<>();
     private static final long EXPIRY_DURATION = 5 * 60 * 1000; // 5 minutes in ms
 
-    public void sendOtp(String phone) {
+    public String sendOtp(String phone) {
         String otp = String.valueOf(new Random().nextInt(9000) + 1000);
         otpStore.put(phone, new OtpEntry(otp));
+        
         System.out.println("OTP for " + phone + " is " + otp); // simulate SMS
+        return otp;
     }
 
     public boolean verifyOtp(String phone, String otp) {
