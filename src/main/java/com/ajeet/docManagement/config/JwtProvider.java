@@ -50,25 +50,54 @@ public class JwtProvider {
     private static final SecretKey KEY =  JwtConstant.SECRET_KEY; // For HS256 algorithm
 
     // Method to generate the token
-    public String generateToken(String userName, String email) {
+   
+    public String generateToken(String value, String loginType) {
         long now = System.currentTimeMillis();
         Date validity = new Date(now + 1000 * 60 * 60); // Token valid for 1 hour
-        Optional<Token> checkSession = tokenRepository.findByUsername(userName);
+        Optional<Token> checkSession = Optional.empty();
+       String  claimType = "";
+        if(loginType == "email") {
+        	claimType = "email";
+        	checkSession = tokenRepository.findByEmail(value);
+        }
+        if(loginType == "username") {
+        	claimType = "username";
+        	checkSession = tokenRepository.findByUsername(value);
+        }
+        if(loginType == "phone") {
+        	claimType = "phone";
+        	checkSession = tokenRepository.findByPhone(value);
+        } 
+        
         if(checkSession.isPresent()) {
         	tokenRepository.delete(checkSession.get());
         }
         String token = Jwts.builder()
-                .setSubject(userName)  // Set roles/authorities
+                .setSubject(value)  // Set roles/authorities
                 .setIssuedAt(new Date(now))
                 .setExpiration(validity)
-                .claim("email", email)                     // custom claim
-                .claim("username", userName) 
+                .claim(claimType, value)                     // custom claim 
                 .signWith(KEY, SignatureAlgorithm.HS256)  // Use HS256 for signing
                 .compact();
         
         // Save the token in the database
         Token tokenEntity = new Token();
-        tokenEntity.setUsername(userName);
+        
+        if(loginType == "email") {
+        	
+        	 tokenEntity.setEmail(value);;
+        	checkSession = tokenRepository.findByEmail(value);
+        }
+        if(loginType == "username") {
+        	 tokenEntity.setUsername(value);
+        	checkSession = tokenRepository.findByUsername(value);
+        }
+        if(loginType == "phone") {
+        	 tokenEntity.setPhone(value);
+        	checkSession = tokenRepository.findByPhone(value);
+        } 
+        
+       
         tokenEntity.setToken(token);
         tokenEntity.setIssuedAt(LocalDateTime.now());
         tokenEntity.setExpiresAt(LocalDateTime.now().plusHours(10));
@@ -78,6 +107,7 @@ public class JwtProvider {
         
         return token;
     }
+    
 
     // Method to validate and parse the token
     public static Claims validateToken(String token) {

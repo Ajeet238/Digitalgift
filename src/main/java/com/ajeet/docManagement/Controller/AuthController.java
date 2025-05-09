@@ -37,6 +37,7 @@ import com.ajeet.docManagement.service.EmailService;
 import com.ajeet.docManagement.service.OtpService;
 import com.ajeet.docManagement.service.TokenService;
 import com.ajeet.docManagement.service.Userservice;
+import com.ajeet.docManagement.serviceimpl.AuthServiceImpl;
 import com.ajeet.docManagement.userDetailServiceimpl.UserDetailService;
 
 import io.jsonwebtoken.Claims;
@@ -71,6 +72,9 @@ public class AuthController {
     
     @Autowired
     private EmailService emailService;
+    
+    @Autowired
+    private AuthServiceImpl authServiceImpl;
 
     
     private final TokenRepository tokenRepository;
@@ -85,208 +89,61 @@ public class AuthController {
 
 	@PostMapping("/signup")
 	public ResponseEntity<AuthResponse> createUserHandler(@RequestBody User user) throws UserException {
-		String email = user.getEmail();
-		System.out.print("insideAPI");
-		String password = user.getPassword();
-		String userName = user.getUsername();
-		String firstName = user.getFirstname();
-		String lastName = user.getLastname();
-		String role = user.getRole();
-		
-		System.out.println("authcontroller");
-		Optional<User> isUserExist = userRepository.findByUsername(userName);
-		if (isUserExist.isPresent()) {
-			throw new UserException("user already registered");
-		} else {
-			User createUser = new User();
-			createUser.setEmail(email);
-			// set encoded password
-			createUser.setPassword(passwordEncoder.encode(password));
-			createUser.setFirstname(firstName);
-			createUser.setLastname(lastName);
-			createUser.setUsername(userName);
-			createUser.setRole(role);
-
-			// now save user using userrepository
-
-			User savedUser = userRepository.save(createUser);
-
-			// create authentication
-			Authentication authentication = new UsernamePasswordAuthenticationToken(email, password);
-
-			SecurityContextHolder.getContext().setAuthentication(authentication);
-
-			AuthResponse authResponse = new AuthResponse();
-			// authResponse.setJwt(token);
-			authResponse.setMessage("Sign up Done");
-			return new ResponseEntity<>(authResponse, HttpStatus.CREATED);
+			return authServiceImpl.createUserHandler(user);
 		}
-	}
+	
 
 	@PostMapping("/signin")
 	public ResponseEntity<AuthResponse> loginUserHandler(@RequestBody LoginRequest loginRequest) {
-		String userName = loginRequest.getUsername();
-		String password = loginRequest.getPassword();
-		String email = loginRequest.getEmail();
-		// String email = loginRequest.getPassword();
-		AuthResponse authResponse = new AuthResponse();
-
-		System.out.println("Username" + userName);
-//		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-//		String jwt = auth.getCredentials().toString();
-//		Token token = tokenRepository.findByToken(jwt);
-//
-//		if (!token.getUsername().equalsIgnoreCase(userName)) {
-//			authResponse.setMessage("Invalid token....");
-//			return new ResponseEntity<AuthResponse>(authResponse, HttpStatus.BAD_GATEWAY);
-//		}
-		Authentication authentication = jwtProvider.authenticate(userName, password);
-		SecurityContextHolder.getContext().setAuthentication(authentication);
-		String jwttoken = jwtProvider.generateToken(userName,email);
-
-		if (authentication.isAuthenticated()) {
-
-			authResponse.setMessage(jwttoken);
-
-			return new ResponseEntity<AuthResponse>(authResponse, HttpStatus.CREATED);
-		}
-			authResponse.setMessage("Invalid User");
-		return new ResponseEntity<AuthResponse>(authResponse, HttpStatus.BAD_GATEWAY);
-
+		return authServiceImpl.loginUserHandler(loginRequest);
 	}
 
 	@GetMapping("/validateToken")
 	public ResponseEntity<?> validateToken(@RequestParam("token") String token) {
-		try {
-			System.out.println("inside validate token");
-			if (token != null) {
-					
-			        Token checkToken = tokenRepository.findByToken(token);
-			        if(checkToken.isRevoked()) {
-			        	return ResponseEntity.badRequest().body(new TokenValidationResponse(false, "Invalid token format"));
-			        }
-			        Claims claims = jwtProvider.validateToken(token);
-
-				// Build a response object
-				return ResponseEntity.ok().body(new TokenValidationResponse(true, "Token is valid"));
-			} else {
-				return ResponseEntity.badRequest().body(new TokenValidationResponse(false, "Invalid token format"));
-			}
-		} catch (Exception e) {
-			// Handle invalid tokens
-			System.out.println(e + "eeeee");
-			return ResponseEntity.status(401).body(new TokenValidationResponse(false, "Invalid or expired token"));
-		}
+		return authServiceImpl.validateToken(token);
 	}
 
 	@PostMapping("/getToken")
 	public String getToken(@RequestBody LoginRequest loginrequest) {
-		String userName = loginrequest.getUsername();
-		String email = loginrequest.getEmail();
-		System.out.println("userName" + userName);	
-		String password = loginrequest.getPassword();
-		Authentication authentication = jwtProvider.authenticate(userName, password);
-
-		if (authentication.isAuthenticated()) { 
-			return jwtProvider.generateToken(userName,email);
-		} else {
-			throw new RuntimeException("invalid access");
-		}
+		return authServiceImpl.getToken(loginrequest);
 	}
 
 	@PostMapping("/logout")
 	public ResponseEntity<?> logout() {
 		
-		  Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-	        String username = authentication.getName();
-	       
-	        // Get the token from the request
-	        String jwt = authentication.getCredentials().toString();
-	        Token token = tokenRepository.findByToken(jwt);
-	        // Revoke the token in the database
-	        token.setRevoked(true);
-	        tokenRepository.save(token);
-
-	        // Clear the authentication context
-	        SecurityContextHolder.clearContext();
-
-
-		return ResponseEntity.ok("Logged out Successfully!");
+		 return authServiceImpl.logout();
 	}
 	
 	@GetMapping("/getAuthenticationStatus")
 	public ResponseEntity<String> getAuthenticationStatus(@RequestHeader("Authorization") String token) {
-	    if (token == null || !token.startsWith("Bearer ")) {
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid token format");
-	    }
-
-	    String jwtToken = token.substring(7); // Remove "Bearer " prefix
-	    Claims claims = jwtProvider.validateToken(jwtToken);
-
-	    if (claims == null) {
-	        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired token");
-	    }
-
-	    return ResponseEntity.ok(claims.getSubject());
+		return authServiceImpl.getAuthenticationStatus(token);
 	}
 	
 
 
     @PostMapping("/sendotp")
     public ResponseEntity<?> sendOtp(@RequestBody OtpRequest request) {
-       String otp =  otpService.sendOtp(request.getPhone());
-        return ResponseEntity.ok("OTP sent: Your OTP is: "+ otp);
+      return authServiceImpl.sendOtp(request);
     }
 
     @PostMapping("/verifyotp")
     public ResponseEntity<?> verifyOtp(@RequestBody OtpVerifyRequest request) {
-        boolean isValid = otpService.verifyOtp(request.getPhone(), request.getOtp());
-        if (isValid) {
-            return ResponseEntity.ok("OTP verified successfully");
-        } else {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired OTP");
-        }
+    	return authServiceImpl.verifyOtp(request);
     }
     
     @PostMapping("/reset-password-otp")
     public ResponseEntity<?> resetPasswordWithOtp(@RequestBody OtpPasswordResetRequest req) {
-        boolean isValid = otpService.verifyOtp(req.getPhone(), req.getOtp());
-        if (!isValid) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid or expired OTP");
-        }
-        System.out.println("req.getPhone()"+req.getPhone());
-        userService.updatePasswordByEmail(req.getEmail(), req.getNewPassword());
-        return ResponseEntity.ok("Password updated successfully.");
+    	return authServiceImpl.resetPasswordWithOtp(req);
     }
+    
     @PostMapping("/request-reset-link")
     public ResponseEntity<?> requestResetLink(@RequestBody Map<String, String> body) {
-        String email = body.get("email");
-        String userName = body.get("username");
-        String token = resetTokenService.generateToken(userName,email);
-        String link = "https://your-app.com/reset-password?token=" + token;
-
-        emailService.send(email, "Reset your password",
-                "Click this link to reset your password:\n" + link);
-
-        return ResponseEntity.ok("Reset link sent to email.");
+    	return authServiceImpl.requestResetLink(body);
     }
 
     @PostMapping("/reset-password")
     public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
-        String token = body.get("token");
-        String newPassword = body.get("newPassword");
-
-        Claims claim = resetTokenService.validateToken(token);
-        
-        if (claim == null) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                                 .body("Invalid or expired token");
-        }
-        String email = (String) claim.get("email");
-        System.out.println("email=>"+email);
-        userService.updatePasswordByEmail(email, newPassword);
-        resetTokenService.invalidate(token);
-        return ResponseEntity.ok("Password updated successfully.");
+    	return authServiceImpl.resetPassword(body);
     }
 
 

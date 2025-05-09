@@ -1,9 +1,11 @@
 package com.ajeet.docManagement.Entity;
 
 import jakarta.persistence.*;
+import lombok.Data;
+
 import java.time.LocalDateTime;
 
-
+@Data
 @Entity
 @Table(name = "token_Table")
 public class Token {
@@ -13,6 +15,8 @@ public class Token {
     private Long id;
 
     private String username;
+    private String email;
+    private String phone;
     private String token;
 
     public String getUsername() {
