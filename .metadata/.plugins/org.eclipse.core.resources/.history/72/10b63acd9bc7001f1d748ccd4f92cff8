@@ -1,0 +1,30 @@
+package com.ajeet.filter;
+
+import org.springframework.cloud.gateway.filter.GatewayFilter;
+import org.springframework.cloud.gateway.filter.factory.AbstractGatewayFilterFactory;
+import org.springframework.stereotype.Component;
+
+@Component
+public class AuthenticationFilter extends AbstractGatewayFilterFactory<AuthenticationFilter.Config> {
+
+	public class Config {
+
+	}
+
+	public AuthenticationFilter() {
+		super();
+		// TODO Auto-generated constructor stub
+	}
+
+	public AuthenticationFilter(Class<Config> configClass) {
+		super(configClass);
+		// TODO Auto-generated constructor stub
+	}
+
+	@Override
+	public GatewayFilter apply(Config config) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+}

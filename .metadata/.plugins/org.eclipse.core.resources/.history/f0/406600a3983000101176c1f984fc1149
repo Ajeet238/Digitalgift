@@ -1,0 +1,18 @@
+package com.ajeet.digital.giftservice.entity;
+
+import jakarta.persistence.Entity;
+import lombok.Data;
+
+@Entity
+@Data
+public class SendGift {
+	
+	private String senderId;
+	private String receiverUpiId;
+	private String amount;
+	private String message;
+	private String mediaUrl;
+	private String occsion;
+	private String eventId;
+	
+}

@@ -1,0 +1,5 @@
+package com.ajeet.docManagement.config;
+
+public class SecretKeyGenerator {
+
+}

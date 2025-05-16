@@ -1,0 +1,42 @@
+package multithreading;
+
+public class DaemonThread {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		System.out.println("before------");
+		Thread t1 = new Thread(()->{
+			for(int i=0; i<10; i++) {
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+				System.out.println("User Thread");	
+				}
+		});
+		
+		Thread t2 = new Thread(new Runnable() {
+			@Override
+			public void run() {
+				for(int i=0; i<50; i++) {
+					try {
+						Thread.sleep(5000);
+					} catch (InterruptedException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
+					System.out.println("Daemon Thread");	
+				}	
+			}
+		});
+		
+		System.out.println("after------");
+		
+		t1.start();
+		t2.start();
+
+	}
+
+}

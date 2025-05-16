@@ -1,0 +1,51 @@
+package multithreading;
+
+public class CreateThread {
+
+	public static void main(String[] args) throws InterruptedException {
+	
+		// implementing runnable
+		Thread t1 = new Thread(new Thread1());
+	
+		
+		// using ananomous function
+		
+		Thread t2 = new Thread( new Runnable(){
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				for(int i=0; i<10; i++) {
+					System.out.println("Thread2 " +i);
+				}
+				
+			}	
+		});
+		
+		// using lambda expression of above thread
+		
+		Thread t3 = new Thread(() -> {
+			
+		    for (int i = 0; i < 10; i++) {
+		        System.out.println("Thread3 "+i);
+		    }
+		    
+		});
+
+		System.out.println("Before calling thread");
+		
+// 1. Thread will execute in sequential manner
+// 2. Before calling thread and after calling thread will call before the thread is start
+// 3. If we use Join method, then next thread will to complete the join thread
+		
+		t1.start();
+		t1.join();
+		t2.start();
+		t2.join();
+		t3.start();
+		t3.join();
+		
+		System.out.println("After calling thread");
+		
+	}
+
+}

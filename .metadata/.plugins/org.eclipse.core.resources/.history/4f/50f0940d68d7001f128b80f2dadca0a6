@@ -1,0 +1,23 @@
+spring.application.name=USERSERVICE
+spring.datasource.url=jdbc:postgresql://localhost:5433/auth_db
+spring.datasource.username=postgres
+spring.datasource.password=system123#
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+server.port=8081
+
+# Eureka configuration
+eureka.client.service-url.defaultZone=http://SERVICEREGISTRY:8761/eureka/  # Corrected here
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true
+eureka.instance.prefer-ip-address=true
+
+# Enable Eureka Discovery Client
+spring.cloud.discovery.enabled=true
+
+# Enable Spring Cloud Gateway locator
+spring.cloud.gateway.discovery.locator.enabled=true
+
+# Resource configuration
+spring.mvc.throw-exception-if-no-handler-found=true
+spring.web.resources.add-mappings=false

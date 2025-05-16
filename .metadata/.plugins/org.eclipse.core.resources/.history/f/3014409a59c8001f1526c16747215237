@@ -1,0 +1,5 @@
+package com.ajeet.ApiGateway.Config;
+
+public class AppConfig {
+
+}

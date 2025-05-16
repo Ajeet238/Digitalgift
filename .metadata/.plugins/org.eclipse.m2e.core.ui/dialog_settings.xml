@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<section name="Workbench">
+	<section name="org.eclipse.m2e.core.pom.overview">
+		<list key="ciManagementUrl">
+		</list>
+		<list key="ciManagementSystem">
+		</list>
+		<list key="issueManagementSystem">
+		</list>
+		<list key="issueManagementUrl">
+		</list>
+	</section>
+	<section name="org.eclipse.m2e.core.pom.dependencies">
+	</section>
+	<section name="MavenProjectImportWizardPage">
+		<list key="rootDirectory">
+			<item value="D:\MySpace\postapi\postapi"/>
+			<item value="D:\MySpace\backEndAPI\backEndAPI"/>
+			<item value="D:\MySpace\giftservice\giftservice"/>
+			<item value="D:\MySpace\authentication"/>
+			<item value="D:\other\project_springboot\backEndAPI\backEndAPI\backEndAPI"/>
+			<item value="D:\MySpace"/>
+			<item value="D:\MySpace\serviceregistyery\serviceregistyery"/>
+			<item value="D:\MySpace\apigatewayupdated\apigateway"/>
+			<item value="D:\MySpace\apigateway\apigateway"/>
+			<item value="D:\MySpace\userservice\userservice"/>
+			<item value="D:\MySpace\filemetadata\filemetadata"/>
+			<item value="D:\MySpace\filestorage\filestorage"/>
+		</list>
+		<list key="projectNameTemplate">
+			<item value="[artifactId]-[version]"/>
+			<item value="[artifactId]"/>
+			<item value="[artifactId]-TRUNK"/>
+			<item value="[groupId].[artifactId]"/>
+			<item value="[groupId].[artifactId]-[version]"/>
+			<item value="[name]"/>
+		</list>
+	</section>
+</section>

@@ -1,0 +1,9 @@
+package com.docmanagement.filemetadata.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+
+import com.docmanagement.filemetadata.entity.FileMetaData;
+
+public interface FileMetaDataRepository extends JpaRepository<FileMetaData, Long> {
+
+}

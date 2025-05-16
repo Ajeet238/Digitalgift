@@ -1,0 +1,18 @@
+spring.application.name=apigateway
+server.port=8085
+eureka.client.serviceUrl.defaultZone=http://localhost:8761/eureka/
+eureka.client.register-with-eureka=true
+eureka.client.fetch-registry=true
+
+# Route configuration
+spring.cloud.gateway.routes[0].id=FILEMETADATA
+spring.cloud.gateway.routes[0].uri=lb://FILEMETADATA
+spring.cloud.gateway.routes[0].predicates[0]=Path=/metadata/**
+
+spring.cloud.gateway.routes[1].id=FILESTORAGE
+spring.cloud.gateway.routes[1].uri=lb://FILESTORAGE
+spring.cloud.gateway.routes[1].predicates[0]=Path=/storage/**
+
+spring.cloud.gateway.routes[2].id=USERSERVICE
+spring.cloud.gateway.routes[2].uri=lb://USERSERVICE
+spring.cloud.gateway.routes[2].predicates[0]=Path=/auth/**

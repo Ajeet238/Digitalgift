@@ -1,0 +1,26 @@
+
+server:
+  port: 8085
+
+eureka:
+  instance:
+    prefer-ip-address: true
+  client:
+    register-with-eureka: true
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: FILEMETADATA
+          uri: lb://FILEMETADATA
+          predicates:
+            - Path=/metadata/**
+        - id: FILESTORAGE
+          uri: lb://FILESTORAGE
+          predicates:
+            - Path=/test/**
+        - id: USERSERVICE
+          uri: lb://USERSERVICE
+          predicates:
+            - Path=/auth/**

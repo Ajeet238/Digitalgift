@@ -1,0 +1,14 @@
+package com.ajeet.filter;
+
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+@Component
+public class RouteValidator {
+
+	public static final List<String> openAPIEndpoints = List.of(
+			"/auth","/register"
+			);
+			
+}

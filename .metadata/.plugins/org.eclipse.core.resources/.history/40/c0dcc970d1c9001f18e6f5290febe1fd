@@ -1,0 +1,3769 @@
+
+package com.newgen.custom.jk.implementation;
+
+import org.apache.http.entity.mime.content.FileBody;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.util.EntityUtils;
+import org.apache.http.util.ExceptionUtils;
+import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.HttpEntity;
+import org.apache.http.entity.mime.content.ContentBody;
+import org.apache.http.entity.mime.content.StringBody;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.mime.MultipartEntity;
+import org.apache.http.entity.mime.MultipartEntityBuilder;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import java.util.Base64;
+import java.io.FileInputStream;
+import java.io.DataOutputStream;
+import javax.sql.rowset.serial.SerialBlob;
+//import org.apache.commons.codec.binary.Base64;
+import org.json.simple.JSONArray;
+import java.io.OutputStream;
+import java.net.SocketTimeoutException;
+import org.json.simple.parser.JSONParser;
+import org.json.simple.parser.ParseException;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.MalformedURLException;
+import java.io.BufferedReader;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import com.newgen.mcap.core.external.logging.concrete.LogMe;
+import org.json.simple.JSONObject;
+import com.newgen.mcap.core.external.resources.concrete.StreamedResource;
+import com.newgen.mcap.core.external.utils.ThreadUtils;
+
+import java.util.Properties;
+import java.util.zip.Inflater;
+import java.io.File;
+
+import com.newgen.custom.jk.entities.CustomJsonObject;
+import com.newgen.custom.jk.implementation.JKSubmission;
+import com.newgen.mcap.core.external.basic.entities.concrete.Device;
+import com.newgen.mcap.core.external.basic.entities.concrete.Organization;
+import com.newgen.mcap.core.external.configuration.entities.concrete.Configuration;
+
+public class JKSubmission
+{
+	
+    private Configuration configuration;
+    private static String Url;
+    private static String urlUserList;
+    private static String clientIp;
+    private static Integer serverPort;
+    private static String UrlAdd; 
+       
+    static {
+        final String sPath = String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(System.getProperty("user.dir")))))))))))) + File.separator + "EOFFICE" + File.separator + "Mobility";
+        final String sFileName = "Eoffice_URL_Conf_File.ini";
+        new Properties(); 
+        try {
+            final Properties prop = getPropertiesLoad(sPath, "Eoffice_URL_Conf_File.ini");
+            JKSubmission.Url = prop.getProperty("Eoffice_Url");
+            JKSubmission.urlUserList = prop.getProperty("Eoffice_urlUserList");
+            JKSubmission.clientIp = prop.getProperty("Eoffice_clientIp");
+            JKSubmission.serverPort = Integer.parseInt(prop.getProperty("Eoffice_serverPort"));
+            JKSubmission.UrlAdd = prop.getProperty("Eoffice_UrlAdd");
+        }
+        catch (Exception var3) { 
+            System.out.println("Error while loading Properties :: " + var3.getMessage());
+        }
+    }
+    
+    public Configuration getConfiguration() {
+        return this.configuration;
+    }
+    
+    public void setConfiguration(final Configuration configuration) {
+        this.configuration = configuration;
+    }
+    
+    public static Properties getPropertiesLoad(final String sPath, final String sFileName) throws Exception {
+        final Properties prop = new Properties();
+        final File file = new File(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(sPath))))))))))) + File.separator + sFileName);
+        FileInputStream fis = null;
+        Label_0325: {
+            Properties var11;
+            try {
+                if (!file.isFile() || !file.exists()) {
+                    throw new Exception(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(sFileName))))))))))) + " file not present.");
+                }
+                fis = new FileInputStream(file);
+                prop.load(new InputStreamReader(fis, "UTF-8"));
+                break Label_0325;
+            }
+            catch (Exception var10) {
+                System.out.println("Exception while fetching corms url -- Exception=" + var10.getMessage());
+                if (var10.getMessage().indexOf("file not present") != -1) {
+                    throw new Exception(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(String.valueOf(sFileName))))))))))) + " File not found.");
+                }
+                var10.printStackTrace();
+                var11 = prop;
+            }
+            finally {
+                if (fis != null) {
+                    fis.close();
+                }
+            }
+            return var11;
+        }
+        if (fis != null) {
+            fis.close();
+        }
+        if (fis != null) {
+            fis.close();
+        }
+        return prop;
+    }
+    
+    
+    public CustomJsonObject getdatbaseConfig(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        try {
+            jsonObj.put((Object)"clientIp", (Object)JKSubmission.clientIp);
+            jsonObj.put((Object)"Url", (Object)JKSubmission.Url);
+            jsonObj.put((Object)"serverPort", (Object)JKSubmission.serverPort);
+            jsonObj.put((Object)"UrlAdd", (Object)JKSubmission.UrlAdd);
+            System.out.println(jsonObj + "jsonobj");   
+        }
+        catch (Exception var6) {   
+            jsonObj.put((Object)"Error", (Object)"NEMF CONFIGURATION ERROR");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    }
+    
+    public StreamedResource getSampleJSON() throws Exception {
+        final StreamedResource responseData = new StreamedResource();
+        final JSONObject jsonObj = new JSONObject();
+        try {
+            final URL url = new URL("\thttp://dummy.restapiexample.com/mobile/v1/employees");
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestMethod("GET");
+            conn.setRequestProperty("Accept", "application/json");
+            if (conn.getResponseCode() != 200) {
+                throw new RuntimeException("Failed : HTTP error code : " + conn.getResponseCode());
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream()));
+            String output;
+            while ((output = br.readLine()) != null) {
+                jsonObj.put((Object)"SampleJson", (Object)output);
+            }
+            conn.disconnect();
+        }
+        catch (MalformedURLException var7) {
+            var7.printStackTrace();
+        }
+        catch (IOException var8) {
+            var8.printStackTrace();
+        }
+        responseData.setStream(jsonObj.toString().getBytes());
+        return responseData;
+    }
+    public CustomJsonObject egoveLoginWithoutTemper(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();
+        final JSONObject jObject = (JSONObject)jParser.parse(inputString);
+        final String UserName = (String)jObject.get((Object)"UserName");
+        LogMe.logMe(2, "UserName==>" + UserName);
+        final String UserPassword = (String)jObject.get((Object)"UserPassword");
+        LogMe.logMe(2, "UserPassword==>" + UserPassword);
+        final String CallName = (String)jObject.get((Object)"CallName");
+        LogMe.logMe(2, "CallName==>" + CallName);
+        final String ForcedLogin = (String)jObject.get((Object)"ForcedLogin");
+        LogMe.logMe(2, "ForcedLogin==>" + ForcedLogin);
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "login");
+            LogMe.logMe(2, "url==>" + url);
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestProperty("", "true");
+            conn.setRequestMethod("POST");
+            final JSONObject mainObj = new JSONObject();
+            mainObj.put("CallName", CallName);
+            mainObj.put("UserName", UserName);
+            mainObj.put("UserPassword", UserPassword);
+            mainObj.put("ForcedLogin", ForcedLogin);
+            LogMe.logMe(2, "mainObj==>" + mainObj);
+            final OutputStream os = conn.getOutputStream();
+            os.write(mainObj.toJSONString().getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+            jsonObj.put((Object)"clientIp", (Object)JKSubmission.clientIp);
+            jsonObj.put((Object)"Url", (Object)JKSubmission.Url);
+            jsonObj.put((Object)"serverPort", (Object)JKSubmission.serverPort);
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"egovResponse", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("egovResponse"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    }
+    public CustomJsonObject egoveLogin(final StreamedResource data) throws Exception {
+    	
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject mainObj = new JSONObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();
+        final JSONObject jObject = (JSONObject)jParser.parse(inputString);
+        JSONArray devicesArray = (JSONArray) jObject.get("devices");
+    	 LogMe.logMe(2, "devicesArray==>" + devicesArray); 
+    	 String packageName;
+    	 String signatureHash;
+    	 String buildType = null; 
+    	Boolean isTamperDetection = false;
+		Organization organization =  (Organization) ThreadUtils.getThreadVariable("organization");
+		if (organization != null) {
+			isTamperDetection = ((Object) organization).isTamperDetection();
+		}
+		if (isTamperDetection) {
+			
+	    	  if (devicesArray != null && !devicesArray.isEmpty()) {
+	              JSONObject device = (JSONObject) devicesArray.get(0);
+	              packageName = (String) device.get("packageName");
+	              signatureHash = (String) device.get("signatureHash");
+	              buildType = (String) device.get("buildType");
+	              LogMe.logMe(2,"packageName: " + packageName);
+	              LogMe.logMe(2,"signatureHash: " + signatureHash);
+	              LogMe.logMe(2,"buildType: " + buildType);
+	          } else {
+	        	  LogMe.logMe(2,"No devices found.");
+	          }
+			Boolean isTampered = false;
+			LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, buildType);
+			if (!buildType.equalsIgnoreCase(null)&& !buildType.equalsIgnoreCase("debug")) {
+				isTampered = isAppTampered(devicesArray);
+			}
+			if(isTampered) {
+				 LogMe.logMe(2, "Detection ==> App has been tampered"); 
+				 
+		           
+		            mainObj.put("Status", "Success");
+		            mainObj.put("Statuscode", "-10");
+		            mainObj.put("Message", "App has been tampered");
+		            LogMe.logMe(2, "mainObj==>" + mainObj);		    		
+		    		responseData.setJsonObject(mainObj.toString());
+		    		return responseData;
+			}
+			else
+			{
+				 final String UserName = (String)jObject.get((Object)"UserName");
+			        LogMe.logMe(2, "UserName==>" + UserName);
+			        final String UserPassword = (String)jObject.get((Object)"UserPassword");
+			        LogMe.logMe(2, "UserPassword==>" + UserPassword);
+			        final String CallName = (String)jObject.get((Object)"CallName");
+			        LogMe.logMe(2, "CallName==>" + CallName);
+			        final String ForcedLogin = (String)jObject.get((Object)"ForcedLogin");
+			        LogMe.logMe(2, "ForcedLogin==>" + ForcedLogin); 
+			        try {
+			            final URL url = new URL(String.valueOf(JKSubmission.Url) + "login");
+			            LogMe.logMe(2, "url==>" + url); 
+			            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+			            conn.setRequestProperty("Content-Type", "application/json");
+			            conn.setConnectTimeout(7000);
+			            conn.setDoOutput(true);
+			            conn.setRequestProperty("", "true");
+			            conn.setRequestMethod("POST");
+			            mainObj.put("CallName", CallName);
+			            mainObj.put("UserName", UserName);
+			            mainObj.put("UserPassword", UserPassword);
+			            mainObj.put("ForcedLogin", ForcedLogin);
+			            LogMe.logMe(2, "mainObj==>" + mainObj);
+			            final OutputStream os = conn.getOutputStream();
+			            os.write(mainObj.toJSONString().getBytes());
+			            os.flush();
+			            final int responseCode = conn.getResponseCode();
+			            LogMe.logMe(2, "responseCode==>" + responseCode);
+			            if (responseCode != 200) {
+			                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+			                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+			                conn.disconnect();
+			                responseData.setJsonObject(jsonObj.toString());
+			                return responseData;
+			            }
+			            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+			            jsonObj.put((Object)"clientIp", (Object)JKSubmission.clientIp);
+			            jsonObj.put((Object)"Url", (Object)JKSubmission.Url);
+			            jsonObj.put((Object)"serverPort", (Object)JKSubmission.serverPort);
+			            String output;
+			            String output1 = "";
+			            while ((output = br.readLine()) != null) {
+			            	 output1 = output1 + output;
+			                jsonObj.put((Object)"egovResponse", (Object)output1);
+			            }
+			            LogMe.logMe(2, "Output==>" + jsonObj.get("egovResponse"));
+			            conn.disconnect();
+			        }
+			        catch (SocketTimeoutException var18) {
+			            var18.printStackTrace();
+			            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+			            responseData.setJsonObject(jsonObj.toString());
+			            return responseData;
+			        }
+			        catch (MalformedURLException var19) {
+			            var19.printStackTrace();
+			            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+			            responseData.setJsonObject(jsonObj.toString());
+			            return responseData;
+			        }
+			        catch (IOException var20) {
+			            var20.printStackTrace();
+			            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+			            responseData.setJsonObject(jsonObj.toString());
+			            return responseData;
+			        }
+			        
+                    responseData.setJsonObject(jsonObj.toString());
+					return responseData;
+			}
+		}
+		else
+		{
+			 final String UserName = (String)jObject.get((Object)"UserName");
+		        LogMe.logMe(2, "UserName==>" + UserName);
+		        final String UserPassword = (String)jObject.get((Object)"UserPassword");
+		        LogMe.logMe(2, "UserPassword==>" + UserPassword);
+		        final String CallName = (String)jObject.get((Object)"CallName");
+		        LogMe.logMe(2, "CallName==>" + CallName);
+		        final String ForcedLogin = (String)jObject.get((Object)"ForcedLogin");
+		        LogMe.logMe(2, "ForcedLogin==>" + ForcedLogin); 
+		        try {
+		            final URL url = new URL(String.valueOf(JKSubmission.Url) + "login");
+		            LogMe.logMe(2, "url==>" + url); 
+		            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+		            conn.setRequestProperty("Content-Type", "application/json");
+		            conn.setConnectTimeout(7000);
+		            conn.setDoOutput(true);
+		            conn.setRequestProperty("", "true");
+		            conn.setRequestMethod("POST");
+		            mainObj.put("CallName", CallName);
+		            mainObj.put("UserName", UserName);
+		            mainObj.put("UserPassword", UserPassword);
+		            mainObj.put("ForcedLogin", ForcedLogin);
+		            LogMe.logMe(2, "mainObj==>" + mainObj);
+		            final OutputStream os = conn.getOutputStream();
+		            os.write(mainObj.toJSONString().getBytes());
+		            os.flush();
+		            final int responseCode = conn.getResponseCode();
+		            LogMe.logMe(2, "responseCode==>" + responseCode);
+		            if (responseCode != 200) {
+		                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+		                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+		                conn.disconnect();
+		                responseData.setJsonObject(jsonObj.toString());
+		                return responseData;
+		            }
+		            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+		            jsonObj.put((Object)"clientIp", (Object)JKSubmission.clientIp);
+		            jsonObj.put((Object)"Url", (Object)JKSubmission.Url);
+		            jsonObj.put((Object)"serverPort", (Object)JKSubmission.serverPort);
+		            String output;
+		            String output1 = "";
+		            while ((output = br.readLine()) != null) {
+		            	 output1 = output1 + output;
+		                jsonObj.put((Object)"egovResponse", (Object)output1);
+		            }
+		            LogMe.logMe(2, "Output==>" + jsonObj.get("egovResponse"));
+		            conn.disconnect();
+		        }
+		        catch (SocketTimeoutException var18) {
+		            var18.printStackTrace();
+		            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+		            responseData.setJsonObject(jsonObj.toString());
+		            return responseData;
+		        }
+		        catch (MalformedURLException var19) {
+		            var19.printStackTrace();
+		            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+		            responseData.setJsonObject(jsonObj.toString());
+		            return responseData;
+		        }
+		        catch (IOException var20) {
+		            var20.printStackTrace();
+		            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+		            responseData.setJsonObject(jsonObj.toString());
+		            return responseData;
+		        }
+		        LogMe.logMe(2, "mainObj else ==>" + mainObj);
+		        responseData.setJsonObject(jsonObj.toString());
+		        return responseData;			
+		}       
+    }
+    
+    public CustomJsonObject Cabinetname(final StreamedResource data) throws Exception {
+        LogMe.logMe(2, "Inside Cabinetname");
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();
+        final JSONObject jObject = (JSONObject)jParser.parse(inputString);
+        final String token = (String)jObject.get((Object)"token");
+        LogMe.logMe(2, "token===>" + token);
+        final String csrFtoken = (String)jObject.get((Object)"csrFtoken");
+        LogMe.logMe(2, "csrFtoken===>" + csrFtoken);
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "/getCabinetList");
+            LogMe.logMe(2, "url===>" + url);
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setDoOutput(true);
+            conn.setConnectTimeout(7000);
+            conn.setRequestMethod("POST");
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setRequestProperty("Authorization", "Bearer " + token);
+            conn.setRequestProperty("csrf-token", csrFtoken);
+            final JSONObject mainObj = new JSONObject();
+            final JSONObject egovUserDetailObj = new JSONObject();
+            final JSONObject requestData = new JSONObject();
+            egovUserDetailObj.put((Object)"token", (Object)token);
+            mainObj.put((Object)"egovUserDetail", (Object)egovUserDetailObj);
+            mainObj.put((Object)"requestData", (Object)requestData);
+            mainObj.put((Object)"operation", (Object)"CABINETLIST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(mainObj.toString().getBytes("UTF-8"));
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode===>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+            String output;
+            while ((output = br.readLine()) != null) {
+                jsonObj.put((Object)"sentItemsList", (Object)output);
+            }
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    }
+    
+    
+    public CustomJsonObject getInboxData(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "workdesk");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"getInboxData", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("getInboxData"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    } 
+   
+    public CustomJsonObject logoutfinal(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "login");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"logoutfinalOpt", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("getInboxData"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    } 
+
+    
+    public CustomJsonObject getSentItemsData(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "workdesk");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"getSentItemsData", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("getSentItemsData"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    } 
+    
+    
+    public CustomJsonObject Activitydesk(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "activitydesk");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"Activitydesk", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("getInboxData"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    } 
+
+   
+    
+    
+    public CustomJsonObject getAttachmentList(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "activitydesk");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"getAttachmentList", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("getAttachmentList"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+    
+    
+    public CustomJsonObject History(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "executeAPI");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"History", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("History"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+    
+    public CustomJsonObject getDakData(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "activitydesk");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"Activitydesk", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("getDakData"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    }
+    public CustomJsonObject getFileData(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "activitydesk");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"Activitydesk", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("getDakData"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+    } 
+    
+    
+    public CustomJsonObject InboxNoteData(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "viewnotinglist");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"SearchUser", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("History"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+    
+    public CustomJsonObject SearchUser(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "executeAPI");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"SearchUser", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("History"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+    
+	public CustomJsonObject getSearchInbox(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "workdesk");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"getSearchInbox", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("History"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+	public CustomJsonObject forwardFile(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "operation");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"forwardFile", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("History"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }	
+	
+	
+	public CustomJsonObject InboxAddComment(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "savenote");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"InboxAddComment", (Object)output1); 
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("History"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }	
+	
+	public CustomJsonObject Clarity(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "operation");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"Clarity", (Object)output1); 
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("Clarity")); 
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }	
+	
+	public CustomJsonObject referFile(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "operation");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"referFile", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("referFile"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+	public CustomJsonObject returnFile(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "operation");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"returnFile", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("returnFile"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace(); 
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+	
+	public CustomJsonObject SearchUserForClarity(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "executeAPI");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"SearchUserForClarity", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("SearchUserForClarity"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace(); 
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+	
+public CustomJsonObject sequentialRoute(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "executeAPI");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"sequentialRoute", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("sequentialRoute"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+	
+	public CustomJsonObject InboxEditComment(final StreamedResource data) throws Exception {
+        final CustomJsonObject responseData = new CustomJsonObject();
+        final JSONObject jsonObj = new JSONObject();
+        final String inputString = new String(data.getStream());
+        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+        final JSONParser jParser = new JSONParser();    
+       
+        try {
+            final URL url = new URL(String.valueOf(JKSubmission.Url) + "modifynote");
+            LogMe.logMe(2, "url==>" + url); 
+            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+            conn.setRequestProperty("Content-Type", "application/json");
+            conn.setConnectTimeout(7000);
+            conn.setDoOutput(true);
+            conn.setRequestMethod("POST");
+            final OutputStream os = conn.getOutputStream();
+            os.write(inputString.getBytes());
+            os.flush();
+            final int responseCode = conn.getResponseCode();
+            LogMe.logMe(2, "responseCode==>" + responseCode);
+            if (responseCode != 200) {
+                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+                conn.disconnect();
+                responseData.setJsonObject(jsonObj.toString());
+                return responseData;
+            }
+            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+           
+            String output;
+            String output1 = "";
+            while ((output = br.readLine()) != null) {
+            	 output1 = output1 + output;
+                jsonObj.put((Object)"InboxEditComment", (Object)output1);
+            }
+            LogMe.logMe(2, "Output==>" + jsonObj.get("InboxEditComment"));
+            conn.disconnect();
+        }
+        catch (SocketTimeoutException var18) {
+            var18.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (MalformedURLException var19) {
+            var19.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        catch (IOException var20) {
+            var20.printStackTrace();
+            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+            responseData.setJsonObject(jsonObj.toString());
+            return responseData;
+        }
+        responseData.setJsonObject(jsonObj.toString());
+        return responseData;
+        }
+	
+	
+	 public CustomJsonObject dakNoteData(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "viewcommentlist");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"dakNoteData", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"dakNoteData"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	
+
+		 
+	 public CustomJsonObject Dak_Add_Comment(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "savecomment");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"DakEditComment", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"DakEditComment"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 
+	 public CustomJsonObject InboxNoteNoteData(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "viewnotecommentlist");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"InboxNoteNoteData", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"InboxNoteNoteData"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 
+	 
+	 public CustomJsonObject InboxNoteAddComment(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "savenotecomment");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"InboxNoteAddComment", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"InboxNoteAddComment"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 
+	 
+	 
+	 public CustomJsonObject InboxNoteEditComment(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "editnotecomment");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"InboxNoteEditComment", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"InboxNoteEditComment"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 public CustomJsonObject DownloadDocument(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        String output1 = "";
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(String.valueOf(JKSubmission.Url))) + "opendocument");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put("DownloadDocument", output1);
+	            }
+	        }
+	        catch (SocketTimeoutException var32) {
+	            var32.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	        }
+	        catch (MalformedURLException var33) {
+	            var33.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	        }
+	        catch (IOException var34) {
+	            var34.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	        }
+	        LogMe.logMe(2, "jsonObj==>" + jsonObj.get("DownloadDocument"));
+	        responseData.setJsonObject(jsonObj.toString());
+	        LogMe.logMe(2, "responseData==>" + responseData);
+	        return responseData;
+	    }
+
+
+
+
+
+
+
+	 public CustomJsonObject InboxDAKEditComment(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();    
+	       
+	        try {
+	            final URL url = new URL(String.valueOf(JKSubmission.Url) + "modifycomment");
+	            LogMe.logMe(2, "url==>" + url); 
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	           
+	            String output;
+	            String output1 = "";
+	            while ((output = br.readLine()) != null) {
+	            	 output1 = output1 + output;
+	                jsonObj.put((Object)"InboxDAKEditComment", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get("InboxDAKEditComment"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	        }
+	 public CustomJsonObject ApproveReject(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();    
+	       
+	        try {
+	            final URL url = new URL(String.valueOf(JKSubmission.Url) + "approvereject");
+	            LogMe.logMe(2, "url==>" + url); 
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	           
+	            String output;
+	            String output1 = "";
+	            while ((output = br.readLine()) != null) {
+	            	 output1 = output1 + output;
+	                jsonObj.put((Object)"approvereject", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get("approvereject"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	        }	 
+	 
+	 
+	 public CustomJsonObject GetCommitteeInboxData(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "workdesk");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"GetCommitteeInboxData", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"InboxDAKEditComment"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 public CustomJsonObject Agendadetailscreen(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "agendadetailscreen");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"Agendadetailscreen", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"Agendadetailscreen"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 
+	 public CustomJsonObject AgendaApproval(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "agendaapprovereject");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"AgendaApproval", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"AgendaApproval"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 
+	 public CustomJsonObject MomDetailScreen(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "momdetailscreen");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"momdetailscreen", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"momdetailscreen"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 public CustomJsonObject MOMApprovalReject(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "momapprovereject");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"MOMApprovalReject", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"MOMApprovalReject"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }	
+	 
+	 public CustomJsonObject IosDocument(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "opendocument");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	            }
+	        	JSONParser parser = new JSONParser();
+	            JSONObject paramsjson = (JSONObject) parser.parse(new String(output1));
+	            String StreamData = (String) paramsjson.get("StreamData");
+	            
+	            byte[] compressedDecodedBytes =Base64.getDecoder().decode(StreamData);
+	            
+	            Inflater inflater = new Inflater();
+	            
+	            inflater.setInput(compressedDecodedBytes);
+	            ByteArrayOutputStream decompressedOutputStream = new ByteArrayOutputStream(compressedDecodedBytes.length);
+	            byte[] decompressionBuffer = new byte[1024];
+	            while (!inflater.finished()) {
+	                int decompressedDataSize = inflater.inflate(decompressionBuffer);
+	                decompressedOutputStream.write(decompressionBuffer, 0, decompressedDataSize);
+	            }
+	            byte[] decompressedBytes = decompressedOutputStream.toByteArray();
+	            String Originalbase64 = Base64.getEncoder().encodeToString(decompressedBytes);
+	       
+	            jsonObj.put((Object)"Stream", (Object)Originalbase64);	    
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	 }
+	 
+	 public CustomJsonObject submitcommitteeaction(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "submitcommitteeaction");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"submitcommitteeaction", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"submitcommitteeaction"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	 public CustomJsonObject meetingAction(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "meetingaction");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"meetingAction", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"meetingAction"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	 }
+	 public CustomJsonObject meetingdetailsscreen(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "meetingdetailsscreen");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"meetingDetail", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"meetingAction"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	 }
+	 
+	 public CustomJsonObject getFullName(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "getFullName");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"getFullName", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"getFullName"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	 }
+	 
+	 public CustomJsonObject meetingInbox(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "meetinginbox");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"meetinginbox", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"meetingAction"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	 }
+	 
+//	  public CustomJsonObject downloadZipDocument(final StreamedResource data) throws Exception {
+//	        final CustomJsonObject responseData = new CustomJsonObject();
+//	        final JSONObject jsonObj = new JSONObject();
+//	        final String inputString = new String(data.getStream());
+//	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+//	        final JSONParser jParser = new JSONParser();
+//	        String output1 = "";
+//	        try {
+//	            final URL url = new URL(String.valueOf(String.valueOf(String.valueOf(JKSubmission.Url))) + "downloaddocuments");
+//	            LogMe.logMe(2, "url==>" + url);
+//	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+//	            conn.setRequestProperty("Content-Type", "application/json");
+//	            conn.setConnectTimeout(7000);
+//	            conn.setDoOutput(true);
+//	            conn.setRequestMethod("POST");
+//	            final OutputStream os = conn.getOutputStream();
+//	            os.write(inputString.getBytes());
+//	            os.flush();
+//	            final int responseCode = conn.getResponseCode();
+//	            LogMe.logMe(2, "responseCode==>" + responseCode);
+//	            if (responseCode != 200) {
+//	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+//	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+//	                conn.disconnect();
+////	                responseData.setJsonObject(jsonObj.toString());
+//	                responseData.setBase64Data(jsonObj.toString());
+//	                return responseData;
+//	            }
+//	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+//	            String output2;
+//	            while ((output2 = br.readLine()) != null) {
+//	                output1 = String.valueOf(output1) + output2;
+//	                jsonObj.put("DownloadDocument", output1);
+//	            }
+//	        }
+//	        catch (SocketTimeoutException var32) {
+//	            var32.printStackTrace();
+//	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+//	        }
+//	        catch (MalformedURLException var33) {
+//	            var33.printStackTrace();
+//	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+//	        }
+//	        catch (IOException var34) {
+//	            var34.printStackTrace();
+//	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+//	        }
+//	  
+//	        responseData.setJsonObject(jsonObj.toString());
+//	        return responseData;
+//	        
+//	    }
+	 
+	 
+	  public StreamedResource downloadZipDocument(final StreamedResource data) throws Exception {
+	        final StreamedResource responseData = new StreamedResource();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        String output1 = "";
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(String.valueOf(JKSubmission.Url))) + "downloaddocuments");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setStream(jsonObj.toString().getBytes());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put("DownloadDocument", output1);
+	            }
+	        }
+	        catch (SocketTimeoutException var32) {
+	            var32.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	        }
+	        catch (MalformedURLException var33) {
+	            var33.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	        }
+	        catch (IOException var34) {
+	            var34.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	        }
+	        LogMe.logMe(2, "before setstream" + jsonObj.toString());
+	        responseData.setStream(jsonObj.toString().getBytes());
+	        LogMe.logMe(2, "after setstream" + responseData.toString());
+	        return responseData;
+	        
+	    } 
+	 
+			 public CustomJsonObject openIosDocument(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "opendocument");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	            }
+	        	JSONParser parser = new JSONParser();
+	            JSONObject paramsjson = (JSONObject) parser.parse(new String(output1));
+	            String StreamData = (String) paramsjson.get("StreamData");
+	            
+	            byte[] compressedDecodedBytes =Base64.getDecoder().decode(StreamData);
+	            
+	            Inflater inflater = new Inflater();
+	            
+	            inflater.setInput(compressedDecodedBytes);
+	            ByteArrayOutputStream decompressedOutputStream = new ByteArrayOutputStream(compressedDecodedBytes.length);
+	            byte[] decompressionBuffer = new byte[1024];
+	            while (!inflater.finished()) {
+	                int decompressedDataSize = inflater.inflate(decompressionBuffer);
+	                decompressedOutputStream.write(decompressionBuffer, 0, decompressedDataSize);
+	            }
+	            byte[] decompressedBytes = decompressedOutputStream.toByteArray();
+	            String Originalbase64 = Base64.getEncoder().encodeToString(decompressedBytes);
+	            jsonObj.put((Object)"Stream", (Object)Originalbase64);	            
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"Stream"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	 }
+	 
+
+			 
+ public CustomJsonObject DOWNLOADZIPDOCUMENTIOS(final StreamedResource data) throws Exception {
+			        final CustomJsonObject responseData = new CustomJsonObject();
+			        final JSONObject jsonObj = new JSONObject();
+			        final String inputString = new String(data.getStream());
+			        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+			        final JSONParser jParser = new JSONParser();
+			        try {
+			            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "downloaddocuments");
+			            LogMe.logMe(2, "url==>" + url);
+			            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+			            conn.setRequestProperty("Content-Type", "application/json");
+			            conn.setConnectTimeout(7000);
+			            conn.setDoOutput(true);
+			            conn.setRequestMethod("POST");
+			            final OutputStream os = conn.getOutputStream();
+			            os.write(inputString.getBytes());
+			            os.flush();
+			            final int responseCode = conn.getResponseCode();
+			            LogMe.logMe(2, "responseCode==>" + responseCode);
+			            if (responseCode != 200) {
+			                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+			                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+			                conn.disconnect();
+			                responseData.setJsonObject(jsonObj.toString());
+			                return responseData;
+			            }
+			            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+			            String output1 = "";
+			            String output2;
+			            while ((output2 = br.readLine()) != null) {
+			                output1 = String.valueOf(output1) + output2;
+			            }
+			        	JSONParser parser = new JSONParser();
+			            JSONObject paramsjson = (JSONObject) parser.parse(new String(output1));
+			            String StreamData = (String) paramsjson.get("StreamData");
+			            
+			            byte[] compressedDecodedBytes =Base64.getDecoder().decode(StreamData);
+			            
+			            Inflater inflater = new Inflater();
+			            
+			            inflater.setInput(compressedDecodedBytes);
+			            ByteArrayOutputStream decompressedOutputStream = new ByteArrayOutputStream(compressedDecodedBytes.length);
+			            byte[] decompressionBuffer = new byte[1024];
+			            while (!inflater.finished()) {
+			                int decompressedDataSize = inflater.inflate(decompressionBuffer);
+			                decompressedOutputStream.write(decompressionBuffer, 0, decompressedDataSize);
+			            }
+			            byte[] decompressedBytes = decompressedOutputStream.toByteArray();
+			            String Originalbase64 = Base64.getEncoder().encodeToString(decompressedBytes);
+			            jsonObj.put((Object)"Stream", (Object)Originalbase64);	            
+			            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"Stream"));
+			            conn.disconnect();
+			        }
+			        catch (SocketTimeoutException var18) {
+			            var18.printStackTrace();
+			            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+			            responseData.setJsonObject(jsonObj.toString());
+			            return responseData;
+			        }
+			        catch (MalformedURLException var19) {
+			            var19.printStackTrace();
+			            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+			            responseData.setJsonObject(jsonObj.toString());
+			            return responseData;
+			        }
+			        catch (IOException var20) {
+			            var20.printStackTrace();
+			            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+			            responseData.setJsonObject(jsonObj.toString());
+			            return responseData;
+			        }
+			        responseData.setJsonObject(jsonObj.toString());
+			        return responseData;
+			 }
+ 
+	
+	public CustomJsonObject viewnotecommentlist(final StreamedResource data) throws Exception {
+     final CustomJsonObject responseData = new CustomJsonObject();
+     final JSONObject jsonObj = new JSONObject();
+     final String inputString = new String(data.getStream());
+     LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+     final JSONParser jParser = new JSONParser();    
+    
+     try {
+         final URL url = new URL(String.valueOf(JKSubmission.Url) + "viewnotecommentlist");
+         LogMe.logMe(2, "url==>" + url); 
+         final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+         conn.setRequestProperty("Content-Type", "application/json");
+         conn.setConnectTimeout(7000);
+         conn.setDoOutput(true);
+         conn.setRequestMethod("POST");
+         final OutputStream os = conn.getOutputStream();
+         os.write(inputString.getBytes());
+         os.flush();
+         final int responseCode = conn.getResponseCode();
+         LogMe.logMe(2, "responseCode==>" + responseCode);
+         if (responseCode != 200) {
+             jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+             jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+             conn.disconnect();
+             responseData.setJsonObject(jsonObj.toString());
+             return responseData;
+         }
+         final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+        
+         String output;
+         String output1 = "";
+         while ((output = br.readLine()) != null) {
+         	 output1 = output1 + output;
+             jsonObj.put((Object)"MinutesOfMeeting", (Object)output1);
+         }
+         LogMe.logMe(2, "Output==>" + jsonObj.get("returnFile"));
+         conn.disconnect();
+     }
+     catch (SocketTimeoutException var18) {
+         var18.printStackTrace(); 
+         jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+         responseData.setJsonObject(jsonObj.toString());
+         return responseData;
+     }
+     catch (MalformedURLException var19) {
+         var19.printStackTrace();
+         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+         responseData.setJsonObject(jsonObj.toString());
+         return responseData;
+     }
+     catch (IOException var20) {
+         var20.printStackTrace();
+         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+         responseData.setJsonObject(jsonObj.toString());
+         return responseData;
+     }
+     responseData.setJsonObject(jsonObj.toString());
+     return responseData;
+     }
+	
+	
+	
+	public CustomJsonObject RevertWI(final StreamedResource data) throws Exception {
+	     final CustomJsonObject responseData = new CustomJsonObject();
+	     final JSONObject jsonObj = new JSONObject();
+	     final String inputString = new String(data.getStream());
+	     LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	     final JSONParser jParser = new JSONParser();    
+	    
+	     try {
+	         final URL url = new URL(String.valueOf(JKSubmission.Url) + "operation");
+	         LogMe.logMe(2, "url==>" + url); 
+	         final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	         conn.setRequestProperty("Content-Type", "application/json");
+	         conn.setConnectTimeout(7000);
+	         conn.setDoOutput(true);
+	         conn.setRequestMethod("POST");
+	         final OutputStream os = conn.getOutputStream();
+	         os.write(inputString.getBytes());
+	         os.flush();
+	         final int responseCode = conn.getResponseCode();
+	         LogMe.logMe(2, "responseCode==>" + responseCode);
+	         if (responseCode != 200) {
+	             jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	             jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	             conn.disconnect();
+	             responseData.setJsonObject(jsonObj.toString());
+	             return responseData;
+	         }
+	         final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	        
+	         String output;
+	         String output1 = "";
+	         while ((output = br.readLine()) != null) {
+	         	 output1 = output1 + output;
+	             jsonObj.put((Object)"RevertWI", (Object)output1);
+	         }
+	         LogMe.logMe(2, "Output==>" + jsonObj.get("returnFile"));
+	         conn.disconnect();
+	     }
+	     catch (SocketTimeoutException var18) {
+	         var18.printStackTrace(); 
+	         jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (MalformedURLException var19) {
+	         var19.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (IOException var20) {
+	         var20.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     responseData.setJsonObject(jsonObj.toString());
+	     return responseData;
+	     }
+
+	
+	public CustomJsonObject mostRecentUserList(final StreamedResource data) throws Exception {
+	     final CustomJsonObject responseData = new CustomJsonObject();
+	     final JSONObject jsonObj = new JSONObject();
+	     final String inputString = new String(data.getStream());
+	     LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	     final JSONParser jParser = new JSONParser();    
+	     try {
+	         final URL url = new URL(String.valueOf(JKSubmission.Url) + "mrsusers");
+	         LogMe.logMe(2, "url==>" + url); 
+	         final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	         conn.setRequestProperty("Content-Type", "application/json");
+	         conn.setConnectTimeout(7000);
+	         conn.setDoOutput(true);
+	         conn.setRequestMethod("POST");
+	         final OutputStream os = conn.getOutputStream();
+	         os.write(inputString.getBytes());
+	         os.flush();
+	         final int responseCode = conn.getResponseCode();
+	         LogMe.logMe(2, "responseCode==>" + responseCode);
+	         if (responseCode != 200) {
+	             jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	             jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	             conn.disconnect();
+	             responseData.setJsonObject(jsonObj.toString());
+	             return responseData;
+	         }
+	         final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	         String output;
+	         String output1 = "";
+	         while ((output = br.readLine()) != null) {
+	         	 output1 = output1 + output;
+	             jsonObj.put((Object)"mostRecentUserList", (Object)output1);
+	         }
+	         LogMe.logMe(2, "Output==>" + jsonObj.get("returnFile"));
+	         conn.disconnect();
+	     }
+	     catch (SocketTimeoutException var18) {
+	         var18.printStackTrace(); 
+	         jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (MalformedURLException var19) {
+	         var19.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (IOException var20) {
+	         var20.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     responseData.setJsonObject(jsonObj.toString());
+	     return responseData;
+	     }
+	
+	public CustomJsonObject Getcommitteelist(final StreamedResource data) throws Exception {
+	     final CustomJsonObject responseData = new CustomJsonObject();
+	     final JSONObject jsonObj = new JSONObject();
+	     final String inputString = new String(data.getStream());
+	     LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	     final JSONParser jParser = new JSONParser();    
+	     try {
+	         final URL url = new URL(String.valueOf(JKSubmission.Url) + "getcommitteelist");
+	         LogMe.logMe(2, "url==>" + url); 
+	         final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	         conn.setRequestProperty("Content-Type", "application/json");
+	         conn.setConnectTimeout(7000);
+	         conn.setDoOutput(true);
+	         conn.setRequestMethod("POST");
+	         final OutputStream os = conn.getOutputStream();
+	         os.write(inputString.getBytes());
+	         os.flush();
+	         final int responseCode = conn.getResponseCode();
+	         LogMe.logMe(2, "responseCode==>" + responseCode);
+	         if (responseCode != 200) {
+	             jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	             jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	             conn.disconnect();
+	             responseData.setJsonObject(jsonObj.toString());
+	             return responseData;
+	         }
+	         final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	         String output;
+	         String output1 = "";
+	         while ((output = br.readLine()) != null) {
+	         	 output1 = output1 + output;
+	             jsonObj.put((Object)"Getcommitteelist", (Object)output1);
+	         }
+	         LogMe.logMe(2, "Output==>" + jsonObj.get("returnFile"));
+	         conn.disconnect();
+	     }
+	     catch (SocketTimeoutException var18) {
+	         var18.printStackTrace(); 
+	         jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (MalformedURLException var19) {
+	         var19.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (IOException var20) {
+	         var20.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     responseData.setJsonObject(jsonObj.toString());
+	     return responseData;
+	     }	
+	// Added by Anjali to Submit Action in NA case
+	 public CustomJsonObject submitnaceaction(final StreamedResource data) throws Exception {
+	        final CustomJsonObject responseData = new CustomJsonObject();
+	        final JSONObject jsonObj = new JSONObject();
+	        final String inputString = new String(data.getStream());
+	        LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	        final JSONParser jParser = new JSONParser();
+	        try {
+	            final URL url = new URL(String.valueOf(String.valueOf(JKSubmission.Url)) + "submitnaceaction");
+	            LogMe.logMe(2, "url==>" + url);
+	            final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	            conn.setRequestProperty("Content-Type", "application/json");
+	            conn.setConnectTimeout(7000);
+	            conn.setDoOutput(true);
+	            conn.setRequestMethod("POST");
+	            final OutputStream os = conn.getOutputStream();
+	            os.write(inputString.getBytes());
+	            os.flush();
+	            final int responseCode = conn.getResponseCode();
+	            LogMe.logMe(2, "responseCode==>" + responseCode);
+	            if (responseCode != 200) {
+	                jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	                jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	                conn.disconnect();
+	                responseData.setJsonObject(jsonObj.toString());
+	                return responseData;
+	            }
+	            final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	            String output1 = "";
+	            String output2;
+	            while ((output2 = br.readLine()) != null) {
+	                output1 = String.valueOf(output1) + output2;
+	                jsonObj.put((Object)"submitnaceaction", (Object)output1);
+	            }
+	            LogMe.logMe(2, "Output==>" + jsonObj.get((Object)"submitnaceaction"));
+	            conn.disconnect();
+	        }
+	        catch (SocketTimeoutException var18) {
+	            var18.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (MalformedURLException var19) {
+	            var19.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        catch (IOException var20) {
+	            var20.printStackTrace();
+	            jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	            responseData.setJsonObject(jsonObj.toString());
+	            return responseData;
+	        }
+	        responseData.setJsonObject(jsonObj.toString());
+	        return responseData;
+	    }
+	
+	public CustomJsonObject EditNoteApprovingAuthority(final StreamedResource data) throws Exception {
+	     final CustomJsonObject responseData = new CustomJsonObject();
+	     final JSONObject jsonObj = new JSONObject();
+	     final String inputString = new String(data.getStream());
+	     LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	     final JSONParser jParser = new JSONParser();    
+	     try {
+	         final URL url = new URL(String.valueOf(JKSubmission.Url) + "editnoteapprovingauthority");
+	         LogMe.logMe(2, "url==>" + url); 
+	         final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	         conn.setRequestProperty("Content-Type", "application/json");
+	         conn.setConnectTimeout(7000);
+	         conn.setDoOutput(true);
+	         conn.setRequestMethod("POST");
+	         final OutputStream os = conn.getOutputStream();
+	         os.write(inputString.getBytes());
+	         os.flush();
+	         final int responseCode = conn.getResponseCode();
+	         LogMe.logMe(2, "responseCode==>" + responseCode);
+	         if (responseCode != 200) {
+	             jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	             jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	             conn.disconnect();
+	             responseData.setJsonObject(jsonObj.toString());
+	             return responseData;
+	         }
+	         final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	         String output;
+	         String output1 = "";
+	         while ((output = br.readLine()) != null) {
+	         	 output1 = output1 + output;
+	             jsonObj.put((Object)"EditNoteApprovingAuthority", (Object)output1);
+	         }
+	         LogMe.logMe(2, "Output==>" + jsonObj.get("returnFile"));
+	         conn.disconnect();
+	     }
+	     catch (SocketTimeoutException var18) {
+	         var18.printStackTrace(); 
+	         jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (MalformedURLException var19) {
+	         var19.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (IOException var20) {
+	         var20.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     responseData.setJsonObject(jsonObj.toString());
+	     return responseData;
+	     }
+	
+	public CustomJsonObject CommitteeTrackSheet(final StreamedResource data) throws Exception {
+	     final CustomJsonObject responseData = new CustomJsonObject();
+	     final JSONObject jsonObj = new JSONObject();
+	     final String inputString = new String(data.getStream());
+	     LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	     final JSONParser jParser = new JSONParser();    
+	     try {
+	         final URL url = new URL(String.valueOf(JKSubmission.Url) + "committeetracksheet");
+	         LogMe.logMe(2, "url==>" + url); 
+	         final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	         conn.setRequestProperty("Content-Type", "application/json");
+	         conn.setConnectTimeout(7000);
+	         conn.setDoOutput(true);
+	         conn.setRequestMethod("POST");
+	         final OutputStream os = conn.getOutputStream();
+	         os.write(inputString.getBytes());
+	         os.flush();
+	         final int responseCode = conn.getResponseCode();
+	         LogMe.logMe(2, "responseCode==>" + responseCode);
+	         if (responseCode != 200) {
+	             jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	             jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	             conn.disconnect();
+	             responseData.setJsonObject(jsonObj.toString());
+	             return responseData;
+	         }
+	         final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	         String output;
+	         String output1 = "";
+	         while ((output = br.readLine()) != null) {
+	         	 output1 = output1 + output;
+	             jsonObj.put((Object)"CommitteeTrackSheet", (Object)output1);
+	         }
+	         conn.disconnect();
+	     }
+	     catch (SocketTimeoutException var18) {
+	         var18.printStackTrace(); 
+	         jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (MalformedURLException var19) {
+	         var19.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (IOException var20) {
+	         var20.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     responseData.setJsonObject(jsonObj.toString());
+	     return responseData;
+	     }
+	public CustomJsonObject pickUp(final StreamedResource data) throws Exception {
+	     final CustomJsonObject responseData = new CustomJsonObject();
+	     final JSONObject jsonObj = new JSONObject();
+	     final String inputString = new String(data.getStream());
+	     LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	     final JSONParser jParser = new JSONParser();    
+	     try {
+	         final URL url = new URL(String.valueOf(JKSubmission.Url) + "pickup");
+	         LogMe.logMe(2, "url==>" + url); 
+	         final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	         conn.setRequestProperty("Content-Type", "application/json");
+	         conn.setConnectTimeout(7000);
+	         conn.setDoOutput(true);
+	         conn.setRequestMethod("POST");
+	         final OutputStream os = conn.getOutputStream();
+	         os.write(inputString.getBytes());
+	         os.flush();
+	         final int responseCode = conn.getResponseCode();
+	         LogMe.logMe(2, "responseCode==>" + responseCode);
+	         if (responseCode != 200) {
+	             jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	             jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	             conn.disconnect();
+	             responseData.setJsonObject(jsonObj.toString());
+	             return responseData;
+	         }
+	         final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	         String output;
+	         String output1 = "";
+	         while ((output = br.readLine()) != null) {
+	         	 output1 = output1 + output;
+	             jsonObj.put((Object)"pickup", (Object)output1);
+	         }
+	         conn.disconnect();
+	     }
+	     catch (SocketTimeoutException var18) {
+	         var18.printStackTrace(); 
+	         jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (MalformedURLException var19) {
+	         var19.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     catch (IOException var20) {
+	         var20.printStackTrace();
+	         jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	         responseData.setJsonObject(jsonObj.toString());
+	         return responseData;
+	     }
+	     responseData.setJsonObject(jsonObj.toString());
+	     return responseData;
+	     }	
+	
+	public CustomJsonObject linkedFileList(final StreamedResource data) throws Exception {
+	       final CustomJsonObject responseData = new CustomJsonObject();
+	       final JSONObject jsonObj = new JSONObject();
+	       final String inputString = new String(data.getStream());
+	       LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+	       final JSONParser jParser = new JSONParser();    
+	       try {
+	           final URL url = new URL(String.valueOf(JKSubmission.Url) + "linkedfilelist");
+	           LogMe.logMe(2, "url==>" + url); 
+	           final HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+	           conn.setRequestProperty("Content-Type", "application/json");
+	           conn.setConnectTimeout(7000);
+	           conn.setDoOutput(true);
+	           conn.setRequestMethod("POST");
+	           final OutputStream os = conn.getOutputStream();
+	           os.write(inputString.getBytes());
+	           os.flush();
+	           final int responseCode = conn.getResponseCode();
+	           LogMe.logMe(2, "responseCode==>" + responseCode);
+	           if (responseCode != 200) {
+	               jsonObj.put((Object)"Error", (Object)conn.getResponseMessage());
+	               jsonObj.put((Object)"ErrorCode", (Object)conn.getResponseCode());
+	               conn.disconnect();
+	               responseData.setJsonObject(jsonObj.toString());
+	               return responseData;
+	           }
+	           final BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+	           String output;
+	           String output1 = "";
+	           while ((output = br.readLine()) != null) {
+	           	 output1 = output1 + output;
+	               jsonObj.put((Object)"linkedfilelist", (Object)output1);
+	           }
+	           LogMe.logMe(2, "Output==>" + jsonObj.get("linkedfilelist"));
+	           conn.disconnect();
+	       }
+	       catch (SocketTimeoutException var18) {
+	           var18.printStackTrace();
+	           jsonObj.put((Object)"Error", (Object)"Connection time Out try again.");
+	           responseData.setJsonObject(jsonObj.toString());
+	           return responseData;
+	       }
+	       catch (MalformedURLException var19) {
+	           var19.printStackTrace();
+	           jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: MalformedURLException");
+	           responseData.setJsonObject(jsonObj.toString());
+	           return responseData;
+	       }
+	       catch (IOException var20) {
+	           var20.printStackTrace();
+	           jsonObj.put((Object)"Error", (Object)"Exception Occur While Fetching Data :: IOException");
+	           responseData.setJsonObject(jsonObj.toString());
+	           return responseData;
+	       }
+	       responseData.setJsonObject(jsonObj.toString());
+	       return responseData;
+	   }
+	
+	 public CustomJsonObject getProfileData(StreamedResource data) throws Exception {
+		 
+		  CustomJsonObject responseData = new CustomJsonObject();
+		  JSONObject jsonObj = new JSONObject();
+		  String inputString = new String(data.getStream());
+		  LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+		  new JSONParser();
+
+		  try {
+			 URL url = new URL(String.valueOf(Url) + "getProfileData");
+			 LogMe.logMe(2, "url==>" + url);
+			 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+			 conn.setRequestProperty("Content-Type", "application/json");
+			 conn.setConnectTimeout(7000);
+			 conn.setDoOutput(true);
+			 conn.setRequestMethod("POST");
+			 OutputStream os = conn.getOutputStream();
+			 os.write(inputString.getBytes());
+			 os.flush();
+			 int responseCode = conn.getResponseCode();
+			 LogMe.logMe(2, "responseCode==>" + responseCode);
+			 if (responseCode != 200) {
+				jsonObj.put("Error", conn.getResponseMessage());
+				jsonObj.put("ErrorCode", conn.getResponseCode());
+				conn.disconnect();
+				responseData.setJsonObject(jsonObj.toString());
+				return responseData;
+			 }
+
+			 BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+			 String output1 = "";
+
+			 while(true) {
+				String output;
+				if ((output = br.readLine()) == null) {
+				   LogMe.logMe(2, "Output==>" + jsonObj.get("getProfileData"));
+				   conn.disconnect();
+				   break;
+				}
+
+				output1 = output1 + output;
+				jsonObj.put("getProfileData", output1);
+			 }
+		  } catch (SocketTimeoutException var13) {
+			 var13.printStackTrace();
+			 jsonObj.put("Error", "Connection time Out try again.");
+			 responseData.setJsonObject(jsonObj.toString());
+			 return responseData;
+		  } catch (MalformedURLException var14) {
+			 var14.printStackTrace();
+			 jsonObj.put("Error", "Exception Occur While Fetching Data :: MalformedURLException");
+			 responseData.setJsonObject(jsonObj.toString());
+			 return responseData;
+		  } catch (IOException var15) {
+			 var15.printStackTrace();
+			 jsonObj.put("Error", "Exception Occur While Fetching Data :: IOException");
+			 responseData.setJsonObject(jsonObj.toString());
+			 return responseData;
+		  }
+
+		  responseData.setJsonObject(jsonObj.toString());
+		  return responseData;
+	   }
+	   
+	   public CustomJsonObject getSelectedProfileData(StreamedResource data) throws Exception {
+
+			  CustomJsonObject responseData = new CustomJsonObject();
+			  JSONObject jsonObj = new JSONObject();
+			  String inputString = new String(data.getStream());
+			  LogMe.logMe(2, "GET TOKEN FROM CLIENT" + inputString);
+			  new JSONParser();
+
+			  try {
+				 URL url = new URL(String.valueOf(Url) + "getSelectedProfileData");
+				 LogMe.logMe(2, "url==>" + url);
+				 HttpURLConnection conn = (HttpURLConnection)url.openConnection();
+				 conn.setRequestProperty("Content-Type", "application/json");
+				 conn.setConnectTimeout(7000);
+				 conn.setDoOutput(true);
+				 conn.setRequestMethod("POST");
+				 OutputStream os = conn.getOutputStream();
+				 os.write(inputString.getBytes());
+				 os.flush();
+				 int responseCode = conn.getResponseCode();
+				 LogMe.logMe(2, "responseCode==>" + responseCode);
+				 if (responseCode != 200) {
+					jsonObj.put("Error", conn.getResponseMessage());
+					jsonObj.put("ErrorCode", conn.getResponseCode());
+					conn.disconnect();
+					responseData.setJsonObject(jsonObj.toString());
+					return responseData;
+				 }
+
+				 BufferedReader br = new BufferedReader(new InputStreamReader(conn.getInputStream(), "UTF-8"));
+				 String output1 = "";
+
+				 while(true) {
+					String output;
+					if ((output = br.readLine()) == null) {
+					   LogMe.logMe(2, "Output==>" + jsonObj.get("getSelectedProfileData"));
+					   conn.disconnect();
+					   break;
+					}
+
+					output1 = output1 + output;
+					jsonObj.put("getSelectedProfileData", output1);
+				 }
+			  } catch (SocketTimeoutException var13) {
+				 var13.printStackTrace();
+				 jsonObj.put("Error", "Connection time Out try again.");
+				 responseData.setJsonObject(jsonObj.toString());
+				 return responseData;
+			  } catch (MalformedURLException var14) {
+				 var14.printStackTrace();
+				 jsonObj.put("Error", "Exception Occur While Fetching Data :: MalformedURLException");
+				 responseData.setJsonObject(jsonObj.toString());
+				 return responseData;
+			  } catch (IOException var15) {
+				 var15.printStackTrace();
+				 jsonObj.put("Error", "Exception Occur While Fetching Data :: IOException");
+				 responseData.setJsonObject(jsonObj.toString());
+				 return responseData;
+			  }
+
+			  responseData.setJsonObject(jsonObj.toString());
+			  return responseData;
+		   }
+	
+	// Method added for BugId - 118649
+	private Boolean isAppTampered(JSONArray device) throws Exception {
+        JSONObject deviceObj = (JSONObject) device.get(0);
+		String packageName = (String) deviceObj.get("packageName");
+		
+		
+		LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "Package-Name::" + packageName);
+		String signatureHash =(String) deviceObj.get("signatureHash");
+		String DeviceOS =(String) deviceObj.get("deviceOS");
+		String deviceName =(String) deviceObj.get("deviceName");
+		LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "Signature-Hash::" + signatureHash);
+		LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "configuration == > " + configuration);
+		LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "deviceName == > " + deviceName);
+		LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "DeviceOS == > " + DeviceOS);
+		String xPath = null;
+		if (deviceName.contains("iPhone")) {
+			String iOSSignatureHash = null;
+			String iOSPackageName = null;
+			try {
+				xPath = "//Key[@name='iOS-signatureHash']";
+				iOSSignatureHash = configuration.searchObjectGraph(xPath, configuration.getConfigurationXmlText()).item(0)
+						.getTextContent().trim();
+				LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "Bundle Signature-Hash iOSSignatureHash::" + iOSSignatureHash);
+				xPath = "//Key[@name = 'iOS-packageName']";
+				iOSPackageName = configuration.searchObjectGraph(xPath, configuration.getConfigurationXmlText()).item(0)
+														.getTextContent().trim();
+				LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "Build Package-Name iOSPackageName ::" + iOSPackageName );
+				if(packageName != null && !packageName.equalsIgnoreCase(iOSPackageName)) {
+					return false;
+				}
+				if(signatureHash != null && !signatureHash.equalsIgnoreCase(iOSSignatureHash)) {
+					return false;
+					}
+			}
+			catch(Exception ex) {
+				LogMe.logMe(LogMe.LOG_LEVEL_ERROR, ex);
+				ex.printStackTrace();
+				throw new Exception("Error in reading the parameters");
+			}
+		}
+		else if (DeviceOS.equalsIgnoreCase("android")) {
+			String androidSignatureHash = null;
+			String androidPackageName = null;
+			try {
+					xPath = "//Key[@name='android-signatureHash']";
+					androidSignatureHash = configuration.searchObjectGraph(xPath, configuration.getConfigurationXmlText()).item(0)
+							.getTextContent().trim();
+					LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "Bundle Signature-Hash::" + androidSignatureHash);
+					xPath = "//Key[@name = 'android-packageName']";
+					androidPackageName = configuration.searchObjectGraph(xPath, configuration.getConfigurationXmlText()).item(0)
+															.getTextContent().trim();
+					LogMe.logMe(LogMe.LOG_LEVEL_DEBUG, "Build Package-Name::" + androidPackageName );
+					if(packageName != null && !packageName.equalsIgnoreCase(androidPackageName)) {
+						return true;
+					}
+					if(signatureHash != null && !signatureHash.equalsIgnoreCase(androidSignatureHash)) {
+						return true;
+						}
+				}
+				catch(Exception ex) {
+					LogMe.logMe(LogMe.LOG_LEVEL_ERROR, ex);
+					ex.printStackTrace();
+					throw new Exception("Error in reading the parameters");
+				}
+			}
+
+			return false;
+	}
+}

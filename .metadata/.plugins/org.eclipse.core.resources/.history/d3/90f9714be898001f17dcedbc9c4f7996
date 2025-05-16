@@ -1,0 +1,20 @@
+spring.application.name=apigateway
+
+server.port = 8084
+eureka.instance.prefer-ip-address = true
+eureka.client.register-with-eureka = true
+
+# Second Route Configuration
+spring.cloud.gateway.routes[0].id=FILEMETADATA
+spring.cloud.gateway.routes[0].uri=lb://FILEMETADATA
+spring.cloud.gateway.routes[0].predicates[0]=Path=/metadata/**
+
+# Third Route Configuration
+spring.cloud.gateway.routes[1].id=FILESTORAGE
+spring.cloud.gateway.routes[1].uri=lb://FILESTORAGE
+spring.cloud.gateway.routes[1].predicates[0]=Path=/storage/**
+
+# First Route Configuration
+spring.cloud.gateway.routes[0].id=USERSERVICE
+spring.cloud.gateway.routes[0].uri=lb://USERSERVICE
+spring.cloud.gateway.routes[0].predicates[0]=Path=/auth/**

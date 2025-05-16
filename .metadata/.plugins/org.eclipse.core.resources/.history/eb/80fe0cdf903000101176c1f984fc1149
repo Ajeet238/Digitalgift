@@ -1,0 +1,4 @@
+#spring.application.name=giftservice
+#spring.datasource.url=jdbc:postgresql://16.171.236.234:5432/gift_db
+#spring.datasource.username=krajeet_db
+#spring.datasource.password=system123#

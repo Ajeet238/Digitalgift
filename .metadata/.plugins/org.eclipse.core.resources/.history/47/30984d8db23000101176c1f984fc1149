@@ -1,0 +1,12 @@
+spring.application.name=giftservice
+
+#database connection
+spring.datasource.url=jdbc:postgresql://16.171.236.234:5432/gift_db
+spring.datasource.username=ajeet
+spring.datasource.password=system121#
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+server.port=8082
+
+# generate security ker of userservice
+spring.security.oauth2.resourceserver.jwt.secret-key=YRe+liDwxJOYpcU/icfoVHxBrXgvLEk5u+twLM+hhVc=

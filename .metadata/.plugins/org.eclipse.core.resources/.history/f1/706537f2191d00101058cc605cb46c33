@@ -1,0 +1,52 @@
+package com.ajeet.trending.youtube.video.config;
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.client.util.DateTime;
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.Video;
+import com.google.api.services.youtube.model.VideoListResponse;
+
+import java.util.Date;
+import java.util.List;
+
+import javax.xml.datatype.DatatypeFactory;
+public class YoutubeSearchother {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+		 YouTube youtubeService = new YouTube.Builder(
+                 GoogleNetHttpTransport.newTrustedTransport(),
+                 JacksonFactory.getDefaultInstance(),
+                 null
+         ).setApplicationName("trending-comedy-in").build();
+
+         YouTube.Videos.List request = youtubeService.videos()
+                 .list("id,snippet,contentDetails")
+                 .setChart("mostPopular")
+                 .setRegionCode("IN")
+                 .setVideoCategoryId("23") // 23 = Comedy
+                 .setMaxResults(10L)
+                 .setKey(API_KEY);
+
+         VideoListResponse response = request.execute();
+         List<Video> videos = response.getItems();
+
+         for (Video video : videos) {
+             String duration = video.getContentDetails().getDuration();
+             long durationSeconds = DatatypeFactory.newInstance()
+                     .newDuration(duration)
+                     .getTimeInMillis(new Date()) / 1000;
+
+             if (durationSeconds >= 60) { // Exclude Shorts
+                 System.out.println("Title: " + video.getSnippet().getTitle());
+                 System.out.println("URL: https://www.youtube.com/watch?v=" + video.getId());
+                 System.out.println("Duration: " + duration);
+                 System.out.println("---------------------------");
+             }
+         }
+
+     } 
+ }
+	
+
+

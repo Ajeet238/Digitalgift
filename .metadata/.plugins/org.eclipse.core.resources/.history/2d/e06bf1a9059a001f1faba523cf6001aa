@@ -1,0 +1,26 @@
+spring.application.name=myproject
+server.port=8080
+# database configuration
+
+spring.datasource.url = jdbc:sqlserver://LPT4569;databaseName=[apimssql];encrypt=true;trustServerCertificate=true;
+spring.datasource.username = ajeet
+spring.datasource.password = Ajjuchamp@123
+
+spring.datasource.driver-class = com.cj.jdbc.Driver
+
+# jpa configuration
+#spring.jpa.properties.hibernate.dialect = SQLServerDialect
+spring.jpa.hibernate.ddl-auto = create
+spring.jpa.show-sql = true
+spring.jpa.properties.hibernate.format_sql = true
+
+
+
+# spring security
+# change password and username
+#spring.security.user.name = Ajeet
+#spring.security.user.password = password321
+#spring.security.user.role = ADMIN
+
+
+

@@ -1,0 +1,36 @@
+spring.application.name=USERSERVICE
+spring.datasource.url=jdbc:postgresql://13.60.16.140:5432/user_db
+spring.datasource.username=krajeet_db
+spring.datasource.password=system123#
+
+# smtp email send setup
+spring.mail.host=smtp.gmail.com
+spring.mail.port=587
+spring.mail.username=ajimpdoc2016@gmail.com
+spring.mail.password=ohvx rbgu udgx hkwc
+spring.mail.properties.mail.smtp.auth=true
+spring.mail.properties.mail.smtp.starttls.enable=true
+
+spring.jpa.hibernate.ddl-auto=update
+spring.jpa.show-sql=true
+server.port=8081
+
+# Eureka configuration
+eureka.instance.prefer-ip-address = true
+eureka.client.register-with-eureka = true
+eureka.client.service-url.defaultZone = http://192.168.29.46:8761/eureka/
+
+# Enable Eureka Discovery Client
+spring.cloud.discovery.enabled=true
+
+# Enable Spring Cloud Gateway locator
+spring.cloud.gateway.discovery.locator.enabled=true
+
+# Resource configuration
+spring.mvc.throw-exception-if-no-handler-found=true
+spring.web.resources.add-mappings=false
+
+spring.datasource.hikari.max-lifetime=300000
+spring.datasource.hikari.idle-timeout=30000
+spring.datasource.hikari.validation-timeout=5000
+

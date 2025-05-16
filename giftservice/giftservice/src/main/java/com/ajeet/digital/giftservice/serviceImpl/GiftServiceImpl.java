@@ -1,0 +1,18 @@
+package com.ajeet.digital.giftservice.serviceImpl;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.stereotype.Service;
+
+import com.ajeet.digital.giftservice.entity.SendGift;
+import com.ajeet.digital.giftservice.service.GiftService;
+
+@Service
+public class GiftServiceImpl implements GiftService {
+
+	@Override
+	public ResponseEntity<String> sendGift(SendGift sendGift) {
+		
+		return null;
+	}
+
+}

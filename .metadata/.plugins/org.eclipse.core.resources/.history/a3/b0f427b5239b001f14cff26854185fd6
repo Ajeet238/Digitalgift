@@ -1,0 +1,10 @@
+spring.application.name=FILEMETADATA
+spring.datasource.url=jdbc:postgresql://localhost:5433/metadata_db
+spring.datasource.username=postgres
+spring.datasource.password=system123#
+spring.jpa.hibernate.ddl-auto=update 
+spring.jpa.show-sql=true
+server.port = 8083
+eureka.instance.prefer-ip-address = true
+eureka.client.register-with-eureka = true
+eureka.client.service-url.defaultZone = http://localhost:8761/

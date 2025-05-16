@@ -1,0 +1,39 @@
+package multithreading;
+
+public class CreateThread {
+
+	public static void main(String[] args) {
+	
+		// implementing runnable
+		Thread t1 = new Thread(new Thread1());
+	
+		
+		// using ananomous function
+		
+		Thread t2 = new Thread( new Runnable(){
+			@Override
+			public void run() {
+				// TODO Auto-generated method stub
+				for(int i=0; i<10; i++) {
+					System.out.println("Thread2 " +i);
+				}
+				
+			}	
+		});
+		
+		// using lambda expression of above thread
+		
+		Thread t3 = new Thread(() -> {
+		    for (int i = 0; i < 10; i++) {
+		        System.out.println("Thread3 "+i);
+		    }
+		});
+
+
+		t1.start();
+		t2.start();
+		t3.start();
+		
+	}
+
+}

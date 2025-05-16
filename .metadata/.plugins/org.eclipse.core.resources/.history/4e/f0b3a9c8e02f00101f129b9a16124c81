@@ -1,0 +1,60 @@
+package com.ajeet.docManagement.serviceimpl;
+
+import java.util.Optional;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.stereotype.Service;
+
+import com.ajeet.docManagement.Entity.User;
+import com.ajeet.docManagement.Repository.UserRepository;
+import com.ajeet.docManagement.service.ProfileService;
+
+@Service
+public class ProfileServiceImpl implements ProfileService {
+	
+	@Autowired
+	private UserRepository userRepository;
+
+	@Override
+	public ResponseEntity<User> getProfileData() {
+		Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+		String user = authentication.getName();
+		
+	User profileData = userRepository.findByUsername(user).orElseThrow(()-> new RuntimeException("User not found"));
+	
+	return ResponseEntity.ok(profileData);
+		
+	}
+
+	@Override
+	public ResponseEntity<String> updateProfileData(User request) {
+	    Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+	    String userName = authentication.getName();
+
+			User user = userRepository.findByUsername(userName).orElseThrow(()-> new RuntimeException("user not found"));
+			   if (request.getFirstname() != null) {
+			        user.setFirstname(request.getFirstname());
+			    }
+			    if (request.getLastname() != null) {
+			        user.setLastname(request.getLastname());
+			    }
+			    if (request.getPhone() != null) {
+			        user.setPhone(request.getPhone());
+			    }
+			    if (request.getEmail() != null) {
+			        user.setEmail(request.getEmail());
+			    }
+				   if (request.getUsername() != null) {
+				        user.setUsername(userName);
+				    }			    
+
+			    userRepository.save(user);
+			
+			return ResponseEntity.ok("Profile updated successfully");
+	}
+	
+}

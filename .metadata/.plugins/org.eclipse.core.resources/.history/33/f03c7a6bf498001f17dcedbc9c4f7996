@@ -1,0 +1,5 @@
+package com.docmanagement.filestorage.controller;
+
+public class TestController {
+
+}

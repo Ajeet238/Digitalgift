@@ -1,0 +1,10 @@
+package com.ajeet.docManagement.service;
+
+import org.springframework.http.ResponseEntity;
+
+import com.ajeet.docManagement.Entity.User;
+
+public interface ProfileService {
+	
+	ResponseEntity<User> getProfileData();
+}

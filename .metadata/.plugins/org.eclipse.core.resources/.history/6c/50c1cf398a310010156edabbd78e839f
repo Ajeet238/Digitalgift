@@ -1,0 +1,27 @@
+package com.ajeet.ApiGateway.filter;
+import org.springframework.cloud.gateway.route.RouteLocator;
+import org.springframework.cloud.gateway.route.builder.RouteLocatorBuilder;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+@Configuration
+public class GatewayConfig {
+
+    @Bean
+    public RouteLocator customRoutes(RouteLocatorBuilder builder) {
+        return builder.routes()
+                .route("filemetadata", r -> r.path("/metadata/**")
+                        .filters(f -> f.filter(new AuthenticationFilter()))
+                        .uri("lb://FILEMETADATA"))
+                .route("filestorage", r -> r.path("/test/**", "/storage/**")
+                        .filters(f -> f.filter(new AuthenticationFilter()))
+                        .uri("lb://FILESTORAGE"))
+                .route("userservice", r -> r.path("/api/auth/**","/api/profile")
+                        .filters(f -> f.filter(new AuthenticationFilter()))
+                        .uri("lb://USERSERVICE"))
+                .route("giftservice", r -> r.path("/gifts/**")  // 👈 added this
+                        .filters(f -> f.filter(new AuthenticationFilter()))
+                        .uri("lb://GIFTSERVICE"))
+                .build();
+    }
+}

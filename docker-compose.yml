@@ -1,0 +1,105 @@
+services:
+  serviceregistry:
+    image: serviceregistry:1.0
+    container_name: serviceregistry
+    ports:
+      - "8761:8761"
+    networks:
+      - microservices-network
+
+  filemetadata:
+    image: filemetadata:1.0
+    container_name: filemetadata
+    ports:
+      - "8083:8083"
+    depends_on:
+      - serviceregistry
+      - filemetadata-db
+    networks:
+      - microservices-network
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://filemetadata-db:5432/metadata_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=system123#
+
+  filestorage:
+    image: filestorage:1.0
+    container_name: filestorage
+    ports:
+      - "8082:8082"
+    depends_on:
+      - serviceregistry
+    networks:
+      - microservices-network
+
+  userservice:
+    image: userservice:1.0
+    container_name: userservice
+    ports:
+      - "8081:8081"
+    depends_on:
+      - serviceregistry
+    networks:
+      - microservices-network
+    environment:
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://userservice-db:5432/user_db
+      - SPRING_DATASOURCE_USERNAME=postgres
+      - SPRING_DATASOURCE_PASSWORD=system123#
+
+  apigateway:
+    image: apigateway:1.0
+    container_name: apigateway
+    ports:
+      - "9090:9090"
+    depends_on:
+      - serviceregistry
+    networks:
+      - microservices-network
+
+  filemetadata-db:
+    image: postgres:latest
+    ports:
+      - "5434:5432"
+    container_name: filemetadata-db
+    environment:
+      POSTGRES_DB: metadata_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: system123#
+    volumes:
+      - filemetadata-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d metadata_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  userservice-db:
+    image: postgres:latest
+    ports:
+      - "5433:5432"
+    container_name: userservice-db
+    environment:
+      POSTGRES_DB: user_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: system123#
+    volumes:
+      - userservice-data:/var/lib/postgresql/data
+    networks:
+      - microservices-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d user_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  filemetadata-data:
+  userservice-data:
+  filestorage-data:
+  apigateway-data:
+
+networks:
+  microservices-network:
+    driver: bridge

@@ -1,0 +1,5 @@
+package com.ajeet.digital.giftservice.config;
+
+public class SecurityConfig {
+
+}

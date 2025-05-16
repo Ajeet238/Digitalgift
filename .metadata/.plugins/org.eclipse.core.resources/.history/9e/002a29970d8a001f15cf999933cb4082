@@ -1,0 +1,5 @@
+package com.docmanagement.filemetadata.repository;
+
+public class FileMetaDataRepository {
+
+}

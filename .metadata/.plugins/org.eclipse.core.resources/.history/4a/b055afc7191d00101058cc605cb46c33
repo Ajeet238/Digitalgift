@@ -1,0 +1,10 @@
+package com.ajeet.trending.youtube.video.config;
+
+public class YoutubeSearchother {
+
+	public static void main(String[] args) {
+		// TODO Auto-generated method stub
+
+	}
+
+}

@@ -1,0 +1,57 @@
+package com.ajeet.trending.youtube.video.config;
+
+import com.google.api.client.googleapis.javanet.GoogleNetHttpTransport;
+import com.google.api.client.json.jackson2.JacksonFactory;
+import com.google.api.services.youtube.YouTube;
+import com.google.api.services.youtube.model.SearchListResponse;
+import com.google.api.services.youtube.model.SearchResult;
+import com.google.api.client.util.DateTime;
+
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.util.Date;
+
+import java.util.List;
+
+public class YouTubeSearch {
+
+    private static final String API_KEY = "AIzaSyBQShh-vrE0I7usgdjTiM2B5S20wZ3XgW0";
+
+    public static void main(String[] args) {
+        try {
+            YouTube youtubeService = new YouTube.Builder(
+                    GoogleNetHttpTransport.newTrustedTransport(),
+                    JacksonFactory.getDefaultInstance(),
+                    null
+            ).setApplicationName("youtube-search-java").build();
+
+            ZonedDateTime todayStart = ZonedDateTime.now(ZoneOffset.UTC)
+                    .withHour(0).withMinute(0).withSecond(0).withNano(0);
+
+            Date javaUtilDate = Date.from(todayStart.toInstant());
+            DateTime publishedAfter = new DateTime(javaUtilDate);
+            
+            YouTube.Search.List searchRequest = youtubeService.search()
+                    .list("id,snippet");
+            searchRequest.setQ("stand-up comedy");
+            searchRequest.setType("video");
+            searchRequest.setOrder("date");
+            searchRequest.setPublishedAfter(publishedAfter);
+            searchRequest.setMaxResults(10L);
+            searchRequest.setKey(API_KEY);
+            searchRequest.setRegionCode("IN");
+
+            SearchListResponse response = searchRequest.execute();
+            List<SearchResult> results = response.getItems();
+
+            for (SearchResult result : results) {
+                System.out.println("Title: " + result.getSnippet().getTitle());
+                System.out.println("URL: https://www.youtube.com/watch?v=" + result.getId().getVideoId());
+                System.out.println("-------------------------------------");
+            }
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+}
