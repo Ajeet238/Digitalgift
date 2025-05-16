@@ -2,5 +2,5 @@
 FROM openjdk:17-jdk-slim
 VOLUME /tmp
 COPY target/POSTAPI-0.0.1-SNAPSHOT.jar POSTAPI.jar
-EXPOSE 8085
+EXPOSE 8087
 ENTRYPOINT ["java", "-jar", "/filemetadata.jar"]
