@@ -1,0 +1,6 @@
+com\ajeet\ApiGateway\filter\GatewayConfig.class
+com\ajeet\ApiGateway\filter\AuthenticationFilter.class
+com\ajeet\ApiGateway\Config\AppConfig.class
+com\ajeet\ApiGateway\ApiGatewayApplication.class
+com\ajeet\ApiGateway\filter\AuthenticationFilter$Config.class
+com\ajeet\ApiGateway\filter\RouteValidator.class
