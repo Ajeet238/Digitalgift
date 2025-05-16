@@ -1,0 +1,32 @@
+package com.ajeet.docManagement.Controller;
+
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.ajeet.docManagement.Entity.User;
+import com.ajeet.docManagement.serviceimpl.ProfileServiceImpl;
+
+@RestController
+@RequestMapping("api/profile")
+public class ProfileController {
+	
+    
+    @Autowired
+    private ProfileServiceImpl profileServiceImpl;
+    
+    @GetMapping("/getProfileData")
+    public ResponseEntity<User> getProfileData(){
+    	return profileServiceImpl.getProfileData();
+    }
+    
+    @PutMapping("/updateProfileData")
+    public ResponseEntity<String> updateProfileData1(@RequestBody User request){
+    	return profileServiceImpl.updateProfileData(request);
+    }
+
+}
