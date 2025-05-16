@@ -45,8 +45,8 @@ jobs:
       uses: appleboy/scp-action@master
       with:
         host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_SSH_KEY }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.HOST_SSH_KEY }}
         source: "scripts/deploy.sh"
         target: "/home/ubuntu/deployment"
 
@@ -54,8 +54,8 @@ jobs:
       uses: appleboy/ssh-action@master
       with:
         host: ${{ secrets.EC2_HOST }}
-        username: ${{ secrets.EC2_USERNAME }}
-        key: ${{ secrets.EC2_SSH_KEY }}
+        username: ${{ secrets.EC2_USER }}
+        key: ${{ secrets.HOST_SSH_KEY }}
         script: |
           chmod +x /home/ubuntu/deployment/deploy.sh
           /home/ubuntu/deployment/deploy.sh
