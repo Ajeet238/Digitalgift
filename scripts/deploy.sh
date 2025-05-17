@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e  # Stop script on error
+set -e
 
 DOCKER_USER=ajeetkumar238199
 SERVICES=("userservice" "filestorage" "filemetadata" "apigateway" "giftservice" "postapi")
@@ -11,39 +11,41 @@ get_port() {
     filestorage) echo 8082 ;;
     filemetadata) echo 8083 ;;
     giftservice) echo 8084 ;;
-    postapi) echo 8087 ;;
+    postapi) echo 8085 ;;
     apigateway) echo 9090 ;;
     *) echo "Unknown service: $1" && exit 1 ;;
   esac
 }
 
-echo "🚀 Starting clean microservice deployment..."
+echo "🚀 Starting microservice deployment..."
 
 for SERVICE in "${SERVICES[@]}"; do
   PORT=$(get_port "$SERVICE")
+  IMAGE_TAG="$DOCKER_USER/$SERVICE:latest"
+
   echo ""
   echo "🔄 Deploying $SERVICE on port $PORT"
 
-  echo "🛑 Stopping container if running..."
+  echo "🛑 Stopping and removing existing container..."
   docker stop "$SERVICE" 2>/dev/null || true
-
-  echo "🗑️ Removing old container..."
   docker rm "$SERVICE" 2>/dev/null || true
 
-  echo "🧼 Removing old images of $SERVICE..."
-  docker rmi $(docker images "$DOCKER_USER/$SERVICE" -q) 2>/dev/null || true
-
-  echo "🔓 Releasing port $PORT if blocked..."
+  echo "🔓 Releasing port $PORT if in use..."
   fuser -k "$PORT"/tcp 2>/dev/null || true
 
-  echo "📥 Pulling latest image..."
-  docker pull "$DOCKER_USER/$SERVICE:latest"
+  echo "📦 Checking if image $IMAGE_TAG already exists locally..."
+  if docker image inspect "$IMAGE_TAG" > /dev/null 2>&1; then
+    echo "✅ Image found locally. Skipping pull."
+  else
+    echo "📥 Image not found. Pulling $IMAGE_TAG..."
+    docker pull "$IMAGE_TAG"
+  fi
 
-  echo "🚀 Starting new container..."
-  docker run -d --name "$SERVICE" -p "$PORT:$PORT" "$DOCKER_USER/$SERVICE:latest"
+  echo "🚀 Starting container..."
+  docker run -d --name "$SERVICE" -p "$PORT:$PORT" "$IMAGE_TAG"
 
   echo "✅ $SERVICE is now running on port $PORT"
 done
 
 echo ""
-echo "🎉 All services have been deployed successfully!"
+echo "🎉 All services deployed successfully!"
