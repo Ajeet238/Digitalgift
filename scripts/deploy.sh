@@ -26,7 +26,7 @@ for SERVICE in "${SERVICES[@]}"; do
   echo ""
   echo "🔄 Deploying $SERVICE on port $PORT"
 
-  echo "🛑 Stopping and removing existing container..."
+  echo "🛑 Stopping and removing existing container (if any)..."
   docker stop "$SERVICE" 2>/dev/null || true
   docker rm "$SERVICE" 2>/dev/null || true
 
@@ -42,10 +42,17 @@ for SERVICE in "${SERVICES[@]}"; do
   fi
 
   echo "🚀 Starting container..."
-  docker run -d --name "$SERVICE" -p "$PORT:$PORT" "$IMAGE_TAG"
-
-  echo "✅ $SERVICE is now running on port $PORT"
+  CONTAINER_ID=$(docker run -d --name "$SERVICE" -p "$PORT:$PORT" "$IMAGE_TAG")
+  echo "🆔 $SERVICE container started with ID: $CONTAINER_ID"
 done
+
+echo ""
+echo "🧹 Cleaning up unused Docker images..."
+docker image prune -f > /dev/null
+
+echo ""
+echo "📦 Currently running containers:"
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
 
 echo ""
 echo "🎉 All services deployed successfully!"
