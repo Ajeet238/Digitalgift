@@ -50,7 +50,7 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.HOST_SSH_KEY }}
         port: 22
-        source: "scripts/deploy.sh"
+        source: "scripts/*"
         target: "/home/ubuntu/deployment/"
 
     - name: 🚀 SSH into EC2 and Execute deploy.sh
