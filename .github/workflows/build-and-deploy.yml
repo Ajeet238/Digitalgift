@@ -65,8 +65,7 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.HOST_SSH_KEY }}
         port: 22
-        timeout: 3600
-        script_stop: true
         script: |
+          echo "✅ SSH connected!"
           chmod +x /home/ubuntu/deployment/deploy.sh
           bash /home/ubuntu/deployment/deploy.sh
