@@ -48,7 +48,7 @@ jobs:
         username: ${{ secrets.EC2_USER }}
         key: ${{ secrets.HOST_SSH_KEY }}
         port: 22
-        source: "./scripts/deploy.sh"              # ✅ path must be correct
+        source: "scripts/deploy.sh"              # ✅ path must be correct
         target: "/home/ubuntu/deployment/"         # ✅ make sure trailing slash exists
 
     - name: 🚀 SSH into EC2 and Execute deploy.sh
