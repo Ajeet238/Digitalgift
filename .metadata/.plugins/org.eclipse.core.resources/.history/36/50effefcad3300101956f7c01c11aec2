@@ -1,5 +1,5 @@
 spring.application.name=USERSERVICE
-spring.datasource.url=jdbc:postgresql://16.170.229.48:5432/userdb
+spring.datasource.url=jdbc:postgresql://51.21.248.67:5432/userdb
 spring.datasource.username=test1db
 spring.datasource.password=system123#
 

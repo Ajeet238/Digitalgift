@@ -1,7 +1,7 @@
 spring.application.name=GIFTSERVICE
 
 #database connection
-spring.datasource.url=jdbc:postgresql://16.170.229.48:5432/ajeetdb
+spring.datasource.url=jdbc:postgresql://51.21.248.67:5432/ajeetdb
 spring.datasource.username=test1db
 spring.datasource.password=system123#
 spring.jpa.hibernate.ddl-auto=update

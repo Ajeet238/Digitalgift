@@ -11,7 +11,7 @@ get_port() {
     filestorage) echo 8082 ;;
     filemetadata) echo 8083 ;;
     giftservice) echo 8084 ;;
-    postapi) echo 8085 ;;
+    postapi) echo 8087 ;;
     apigateway) echo 9090 ;;
     *) echo "Unknown service: $1" && exit 1 ;;
   esac
