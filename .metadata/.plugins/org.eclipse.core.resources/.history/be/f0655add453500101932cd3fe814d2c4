@@ -2,7 +2,7 @@ spring.application.name=POSTAPI
 server.port=8087
 # database configuration
 
-spring.datasource.url=jdbc:postgresql://51.20.142.115:5432/postdb
+spring.datasource.url=jdbc:postgresql://13.53.47.137:5432/postdb
 spring.datasource.username=test1db
 spring.datasource.password=system123#
 

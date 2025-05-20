@@ -9,50 +9,51 @@ get_port() {
   case "$1" in
     userservice) echo 8081 ;;
     filestorage) echo 8082 ;;
-    filemetadata) echo 8083 ;;
+    filemetadata) echo 8088 ;;
     giftservice) echo 8084 ;;
-    postapi) echo 8085 ;;
+    postapi) echo 8087 ;;
     apigateway) echo 9090 ;;
     *) echo "Unknown service: $1" && exit 1 ;;
   esac
 }
 
-echo "🚀 Starting microservice deployment..."
+LOG_FILE="/home/ubuntu/deploy.log"
+echo "🚀 Starting microservice deployment at $(date)" | tee -a $LOG_FILE
 
 for SERVICE in "${SERVICES[@]}"; do
   PORT=$(get_port "$SERVICE")
   IMAGE_TAG="$DOCKER_USER/$SERVICE:latest"
 
-  echo ""
-  echo "🔄 Deploying $SERVICE on port $PORT"
+  echo -e "\n🔄 Deploying $SERVICE on port $PORT" | tee -a $LOG_FILE
 
-  echo "🛑 Stopping and removing existing container (if any)..."
+  echo "🛑 Stopping and removing existing container (if any)..." | tee -a $LOG_FILE
   docker stop "$SERVICE" 2>/dev/null || true
   docker rm "$SERVICE" 2>/dev/null || true
 
-  echo "🔓 Releasing port $PORT if in use..."
-  fuser -k "$PORT"/tcp 2>/dev/null || true
-
-  echo "📦 Checking if image $IMAGE_TAG already exists locally..."
-  if docker image inspect "$IMAGE_TAG" > /dev/null 2>&1; then
-    echo "✅ Image found locally. Skipping pull."
+  if [[ "$PORT" != "22" ]]; then
+    echo "🔓 Releasing port $PORT if in use..." | tee -a $LOG_FILE
+    fuser -k "$PORT"/tcp 2>/dev/null || true
   else
-    echo "📥 Image not found. Pulling $IMAGE_TAG..."
-    docker pull "$IMAGE_TAG"
+    echo "⚠️ Skipping port 22 (SSH) to avoid disconnect" | tee -a $LOG_FILE
   fi
 
-  echo "🚀 Starting container..."
+  echo "📦 Checking if image $IMAGE_TAG already exists locally..." | tee -a $LOG_FILE
+  if docker image inspect "$IMAGE_TAG" > /dev/null 2>&1; then
+    echo "✅ Image found locally. Skipping pull." | tee -a $LOG_FILE
+  else
+    echo "📥 Pulling image $IMAGE_TAG..." | tee -a $LOG_FILE
+    docker pull "$IMAGE_TAG" | tee -a $LOG_FILE
+  fi
+
+  echo "🚀 Starting container..." | tee -a $LOG_FILE
   CONTAINER_ID=$(docker run -d --name "$SERVICE" -p "$PORT:$PORT" "$IMAGE_TAG")
-  echo "🆔 $SERVICE container started with ID: $CONTAINER_ID"
+  echo "🆔 $SERVICE started with container ID: $CONTAINER_ID" | tee -a $LOG_FILE
 done
 
-echo ""
-echo "🧹 Cleaning up unused Docker images..."
+echo -e "\n🧹 Cleaning up unused Docker images..." | tee -a $LOG_FILE
 docker image prune -f > /dev/null
 
-echo ""
-echo "📦 Currently running containers:"
-docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}"
+echo -e "\n📦 Running containers:" | tee -a $LOG_FILE
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}" | tee -a $LOG_FILE
 
-echo ""
-echo "🎉 All services deployed successfully!"
+echo -e "\n🎉 All services deployed successfully at $(date)\n" | tee -a $LOG_FILE
