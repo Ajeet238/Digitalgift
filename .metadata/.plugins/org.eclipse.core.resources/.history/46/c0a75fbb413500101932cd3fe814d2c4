@@ -1,10 +1,10 @@
 spring.application.name=FILEMETADATA
-spring.datasource.url=jdbc:postgresql://13.53.47.137:5432/metadatadb
+spring.datasource.url=jdbc:postgresql://16.170.229.48:5432/metadatadb
 spring.datasource.username=test1db
 spring.datasource.password=system123#
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=true
-server.port = 8088
+server.port = 8083
 eureka.instance.prefer-ip-address = true
 eureka.client.register-with-eureka = true
 eureka.client.service-url.defaultZone = http://192.168.29.46:8761/eureka/

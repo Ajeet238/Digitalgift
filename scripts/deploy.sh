@@ -9,7 +9,7 @@ get_port() {
   case "$1" in
     userservice) echo 8081 ;;
     filestorage) echo 8082 ;;
-    filemetadata) echo 8083 ;;
+    filemetadata) echo 8088 ;;
     giftservice) echo 8084 ;;
     postapi) echo 8087 ;;
     apigateway) echo 9090 ;;
