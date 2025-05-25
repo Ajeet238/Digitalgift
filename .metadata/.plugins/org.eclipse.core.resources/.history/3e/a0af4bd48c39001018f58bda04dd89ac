@@ -33,7 +33,7 @@ import com.ajeet.docManagement.userDetailServiceimpl.UserDetailService;
 
 import io.jsonwebtoken.Claims;
 
-@Service
+@Controller
 public class AuthServiceImpl implements AuthService {
 	@Autowired
 	private UserDetailService userDetailService;
