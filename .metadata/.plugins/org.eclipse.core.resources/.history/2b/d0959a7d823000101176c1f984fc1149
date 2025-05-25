@@ -1,5 +1,0 @@
-package com.ajeet.digital.giftservice.service;
-
-public interface GiftService {
-
-}
