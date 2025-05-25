@@ -3,10 +3,11 @@
 set -e
 
 DOCKER_USER=ajeetkumar238199
-SERVICES=("userservice" "filestorage" "filemetadata" "apigateway" "giftservice" "postapi")
+SERVICES=("userservice" "filestorage" "filemetadata" "apigateway" "giftservice" "postapi" "serviceregistry")
 
 get_port() {
   case "$1" in
+	serviceregistry) echo 8761
     userservice) echo 8081 ;;
     filestorage) echo 8082 ;;
     filemetadata) echo 8088 ;;

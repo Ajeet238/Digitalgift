@@ -7,7 +7,7 @@ on:
 
 env:
   DOCKER_USER: ajeetkumar238199
-  SERVICES: userservice filestorage filemetadata apigateway giftservice postapi
+  SERVICES: userservice filestorage filemetadata apigateway giftservice postapi serviceregistry
 
 jobs:
   build-and-deploy:
