@@ -7,7 +7,7 @@ SERVICES=("userservice" "filestorage" "filemetadata" "apigateway" "giftservice" 
 
 get_port() {
   case "$1" in
-	serviceregistry) echo 8761
+	serviceregistry) echo 8761 ;;
     userservice) echo 8081 ;;
     filestorage) echo 8082 ;;
     filemetadata) echo 8088 ;;
