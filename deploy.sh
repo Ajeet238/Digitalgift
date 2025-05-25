@@ -28,8 +28,8 @@ deploy_service() {
 
   echo -e "\n🔄 Deploying $SERVICE on port $PORT" | tee -a $LOG_FILE
 
-  echo "🛑 Stopping and removing existing container..." | tee -a $LOG_FILE
-  docker stop "$SERVICE" 2>/dev/null || true
+  echo "🛑 Stopping and removing existing container (30s timeout)..." | tee -a $LOG_FILE
+  docker stop -t 30 "$SERVICE" 2>/dev/null || true
   docker rm "$SERVICE" 2>/dev/null || true
 
   echo "🔓 Releasing port $PORT if in use..." | tee -a $LOG_FILE
@@ -48,6 +48,10 @@ deploy_service() {
     JVM_OPTS="-Xms48m -Xmx192m"
     echo "⏳ Waiting a bit more before launching postapi..." | tee -a $LOG_FILE
     sleep 8
+  elif [[ "$SERVICE" == "serviceregistry" ]]; then
+    JVM_OPTS="-Xms32m -Xmx160m"
+    echo "⏳ Giving extra time for Eureka registry startup..." | tee -a $LOG_FILE
+    sleep 5
   else
     JVM_OPTS="-Xms64m -Xmx256m"
   fi
@@ -61,11 +65,18 @@ deploy_service() {
     -p "$PORT:$PORT" \
     "$IMAGE_TAG" >> $LOG_FILE
 
-  sleep 5
+  # Sleep longer after run per service
+  if [[ "$SERVICE" == "serviceregistry" ]]; then
+    sleep 20
+  elif [[ "$SERVICE" == "postapi" ]]; then
+    sleep 15
+  else
+    sleep 10
+  fi
+
   echo "📝 First 10 log lines from $SERVICE:" | tee -a $LOG_FILE
   docker logs "$SERVICE" 2>&1 | head -n 10 >> $LOG_FILE
 
-  # Check exit code and log errors
   if [ $? -ne 0 ]; then
     echo "❌ $SERVICE failed to start. Showing last logs:" | tee -a $LOG_FILE
     docker logs "$SERVICE" 2>&1 | tail -n 20 | tee -a $LOG_FILE
