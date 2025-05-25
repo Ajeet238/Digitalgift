@@ -43,12 +43,21 @@ deploy_service() {
     docker pull "$IMAGE_TAG" | tee -a $LOG_FILE
   fi
 
+  # Per-service JVM tuning
+  if [[ "$SERVICE" == "postapi" ]]; then
+    JVM_OPTS="-Xms48m -Xmx192m"
+    echo "⏳ Waiting a bit more before launching postapi..." | tee -a $LOG_FILE
+    sleep 8
+  else
+    JVM_OPTS="-Xms64m -Xmx256m"
+  fi
+
   echo "🚀 Starting container with memory limits and JVM tuning..." | tee -a $LOG_FILE
   docker run -d \
     --memory="300m" \
     --memory-swap="512m" \
     --name "$SERVICE" \
-    -e JAVA_OPTS="-Xms64m -Xmx256m" \
+    -e JAVA_OPTS="$JVM_OPTS" \
     -p "$PORT:$PORT" \
     "$IMAGE_TAG" >> $LOG_FILE
 
@@ -56,10 +65,16 @@ deploy_service() {
   echo "📝 First 10 log lines from $SERVICE:" | tee -a $LOG_FILE
   docker logs "$SERVICE" 2>&1 | head -n 10 >> $LOG_FILE
 
-  echo "✅ $SERVICE deployed and listening on port $PORT" | tee -a $LOG_FILE
+  # Check exit code and log errors
+  if [ $? -ne 0 ]; then
+    echo "❌ $SERVICE failed to start. Showing last logs:" | tee -a $LOG_FILE
+    docker logs "$SERVICE" 2>&1 | tail -n 20 | tee -a $LOG_FILE
+  else
+    echo "✅ $SERVICE deployed and listening on port $PORT" | tee -a $LOG_FILE
+  fi
 }
 
-# 🚀 Deployment Starts
+# 🚀 Start deployment
 echo -e "\n🚀 Deploy started at $(date)\n" | tee -a $LOG_FILE
 
 echo "📦 Deploying core services (Stage 1)..." | tee -a $LOG_FILE
